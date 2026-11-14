@@ -10,7 +10,7 @@ tabs and panes. It combines:
 - the compact visual language of `zellij-hud`;
 - the search-first interaction of Neovim pickers;
 - a session/tab/pane tree;
-- live pane-state icons;
+- live pane-state icons and selected-pane details;
 - direct cross-session pane focus.
 
 It is not a permanent sidebar and does not replace `zellij-hud`.
@@ -39,12 +39,22 @@ Proposed visual:
 │ ▸󰒍 infra                                             │
 │  󰒓 old-session                resurrectable 2d ago  │
 │                                                     │
+│ ── selected ─────────────────────────────────────── │
+│ status   running                                    │
+│ cwd      ~/Work/GitSource/ConfigFiles               │
+│ command  cargo test --all                           │
+│ pane     work / code / 3                            │
+│                                                     │
 │ ↑↓ move  ←→ fold  Enter jump  Esc close             │
 ╰─────────────────────────────────────────────────────╯
 ```
 
 The final glyphs should be centralized so plain-text and Nerd Font modes remain
 possible.
+
+The detail block is a selected-node preview, not a permanent layout panel.
+When the popup is wide enough it can move to the right side; narrow terminals
+keep it below the tree.
 
 ## Visible levels
 
@@ -68,6 +78,7 @@ Search is case-insensitive fuzzy matching across:
 - session name;
 - tab name;
 - pane title;
+- current working directory;
 - current command;
 - pane ID.
 
@@ -121,6 +132,35 @@ The icon state is derived in this order:
 Running commands should be updated from `CommandChanged`; the plugin should not
 spawn a process poller.
 
+## Selected pane details
+
+The details area shows full, unclipped information for the selected terminal
+pane:
+
+- progress state: running, idle shell, exited or unknown;
+- current working directory;
+- full foreground command and arguments;
+- session, tab and pane identity;
+- floating/fullscreen/stacked modifiers when relevant.
+
+The short pane row keeps only compact information so long commands do not
+destroy the tree alignment. The detail panel provides the complete values.
+
+Layout behavior:
+
+- `details=auto`: right preview at wide widths, bottom block at narrow widths;
+- `details=bottom`: always draw below the visible tree;
+- `details=right`: always reserve a side preview;
+- `details=off`: hide the panel.
+
+Current-session CWD uses `CwdChanged` and `get_pane_cwd()`. Current-session
+commands use `CommandChanged` and `get_pane_running_command()`. Other live
+sessions may show `unknown` for these values because 0.45.1 does not guarantee
+live process details for their panes.
+
+Switching to another session with `switch_session_with_focus` is still
+available even when its CWD or command is unknown.
+
 ## Navigation semantics
 
 Enter behavior by node:
@@ -149,6 +189,11 @@ plugins {
         show_panes "true"
         include_resurrectable "true"
         show_commands "true"
+        show_cwd "true"
+        details "auto"                 // auto | bottom | right | off
+        detail_status "true"
+        detail_cwd "true"
+        detail_command "true"
         show_pane_ids "false"
         follow_current_session "true"
         sort "session-tab-pane"
@@ -205,6 +250,7 @@ Core state:
 struct State {
     sessions: Vec<SessionNode>,
     running_commands: HashMap<u32, Vec<String>>,
+    pane_cwds: HashMap<u32, PathBuf>,
     focused_pane: Option<u32>,
     query: String,
     visible_rows: Vec<Row>,
@@ -224,7 +270,8 @@ Zellij events
   ├─ SessionUpdate -> session/tab/pane snapshot
   ├─ TabUpdate     -> current-session tab metadata
   ├─ PaneUpdate    -> current-session pane metadata
-  └─ CommandChanged -> running-command cache
+  ├─ CommandChanged -> running-command cache
+  └─ CwdChanged     -> pane CWD cache
             │
             ▼
         tree model
@@ -260,6 +307,7 @@ provides the running command API directly.
 
 - Update state only on relevant Zellij events.
 - Query missing command state once when the finder opens.
+- Query missing CWD state once when the finder opens.
 - Spinner animation runs only while the finder is visible and only when at
   least one visible pane is running.
 - Recompute the fuzzy result only when the query or underlying tree changes.
@@ -274,6 +322,8 @@ Unit tests:
 - stable selection after refresh;
 - fuzzy filtering preserves ancestors;
 - icons for shell, editor, Codex, Claude, floating, exited and unknown;
+- progress state, command and CWD detail rendering;
+- detail-panel placement at narrow and wide widths;
 - navigation target selection across sessions;
 - configuration parsing and invalid values.
 
@@ -284,6 +334,7 @@ Integration tests with real Zellij:
 - switch to another live session and focus a pane;
 - select a resurrectable session;
 - verify `CommandChanged` icon updates;
+- verify `CwdChanged` detail updates;
 - verify the optional launcher sequence and timeout.
 
 Visual fixtures:
@@ -311,3 +362,5 @@ Visual fixtures:
 - Whether full nested split geometry is worth a later implementation.
 - How to present unknown command state for non-current sessions without visual
   noise.
+- How to present unknown CWD for non-current sessions without duplicating the
+  command placeholder.

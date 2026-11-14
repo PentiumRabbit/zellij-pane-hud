@@ -15,6 +15,7 @@ The requested feature is feasible:
 
 - Zellij exposes sessions, tabs and panes through plugin events.
 - A plugin can query the foreground command of a terminal pane.
+- A plugin can query the current working directory of a terminal pane.
 - A plugin can switch to another session and focus a pane in one API call.
 - A floating plugin pane can implement the HUD-style search UI.
 - A flat fuzzy search and a two-level tab→pane tree are straightforward.
@@ -101,6 +102,36 @@ Versioned source:
 - `CommandChanged` in
   [`event.proto`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-utils/src/plugin_api/event.proto)
 
+### Current working directory
+
+Two APIs are available:
+
+- Subscribe to `CwdChanged(PaneId, PathBuf, Vec<ClientId>)`.
+- Call `get_pane_cwd(PaneId)`.
+
+`get_pane_cwd()` requires `ReadApplicationState`. The helper queries the
+operating system for the current process CWD, not just the pane's starting
+directory. Errors include exited processes, inaccessible directories and
+deleted directories.
+
+The practical flow is:
+
+1. Query CWD when the finder opens.
+2. Update the cache from `CwdChanged`.
+3. Fall back to a configured placeholder when the pane has exited or cannot be
+   queried.
+
+Current-session CWD data is reliable. `SessionInfo` in 0.45.1 does not provide
+a guaranteed live CWD for panes in other sessions, so those values should be
+shown as unknown unless a future API changes this.
+
+Versioned source:
+
+- `get_pane_cwd()` in
+  [`shim.rs`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-tile/src/shim.rs)
+- `CwdChanged` in
+  [`event.proto`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-utils/src/plugin_api/event.proto)
+
 ### Direct navigation
 
 Pane focus in the current session:
@@ -138,6 +169,7 @@ Search corpus:
 - session name;
 - tab name and position;
 - pane title;
+- current working directory;
 - current command;
 - pane ID.
 
@@ -267,6 +299,11 @@ plugins {
         show_panes "true"
         include_resurrectable "true"
         show_commands "true"
+        show_cwd "true"
+        details "auto"
+        detail_status "true"
+        detail_cwd "true"
+        detail_command "true"
         icons "nerd"
         icon_style "hud"
         width "72%"
@@ -279,12 +316,20 @@ plugins {
 `show_sessions`, `show_tabs` and `show_panes` control visible levels. Flattening
 must remain deterministic when a level is hidden.
 
+`details` controls the selected-pane details panel:
+
+- `auto`: right side when wide enough, otherwise bottom;
+- `bottom`: fixed detail block under the tree;
+- `right`: side preview;
+- `off`: no detail panel.
+
 ## Explicit limitations
 
 - The tree is `session → tab → pane`, not the full nested split geometry.
 - Resurrectable sessions cannot expose tabs/panes until they are attached.
 - Live running-command icons are guaranteed only for the current session in
   0.45.1.
+- Live CWD details are guaranteed only for the current session in 0.45.1.
 - The exact two-key sequence needs a launcher separate from the popup plugin.
 - The WASM target is not currently installed on this machine.
 - The configured Cargo registry is a non-standard USTC sparse source; the build

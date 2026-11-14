@@ -31,6 +31,8 @@ icons, and useful status cues without a permanent sidebar.
 - Current session: live command and pane-state icons.
 - Other live sessions: structural tree and best-effort status.
 - Resurrectable sessions: leaf nodes because their tabs and panes are not live.
+- The selected pane shows whether work is running, its current directory and
+  its full foreground command.
 - Enter on a session focuses that session.
 - Enter on a tab focuses that tab.
 - Enter on a pane switches to the session, tab and pane.
@@ -59,6 +61,7 @@ See [Research](docs/RESEARCH.md) for the tested constraint.
 - [x] Version-specific API research
 - [x] Existing-plugin comparison
 - [x] Initial UX and architecture proposal
+- [x] Pane status, CWD and command details in the design
 - [ ] User review of the design
 - [ ] Implementation plan
 - [ ] Rust/WASM implementation
