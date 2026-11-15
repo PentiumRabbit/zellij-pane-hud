@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         run: |
@@ -45,7 +45,7 @@ jobs:
           cargo --version
 
       - name: Cache cargo build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -57,7 +57,7 @@ jobs:
 
       - name: Restore snapshot tool
         id: snapshot-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/zellij-plugin-snapshot
           key: ${{ runner.os }}-zellij-plugin-snapshot-${{ env.SNAPSHOT_VERSION }}
@@ -108,7 +108,7 @@ jobs:
             awk '{ print $1 "  pane-hud.wasm" }' > dist/pane-hud.wasm.sha256
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pane-hud-wasm
           path: |
@@ -126,7 +126,7 @@ jobs:
       contents: write
     steps:
       - name: Download WASM artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pane-hud-wasm
           path: dist
