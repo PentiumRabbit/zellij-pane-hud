@@ -101,7 +101,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.title,
                         row.matches.get(*field),
-                        ForegroundColor::Default,
+                        field_color(*field),
                     );
                 }
                 TemplateField::Dir => {
@@ -109,7 +109,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.dir,
                         row.matches.get(*field),
-                        ForegroundColor::Blue,
+                        field_color(*field),
                     );
                 }
                 TemplateField::Session => {
@@ -117,7 +117,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.session,
                         row.matches.get(*field),
-                        ForegroundColor::Default,
+                        field_color(*field),
                     );
                 }
                 TemplateField::Tab => {
@@ -125,7 +125,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.tab_name,
                         row.matches.get(*field),
-                        ForegroundColor::Default,
+                        field_color(*field),
                     );
                 }
                 TemplateField::Command => {
@@ -133,7 +133,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.command,
                         row.matches.get(*field),
-                        ForegroundColor::Default,
+                        field_color(*field),
                     );
                 }
                 TemplateField::PaneId => {
@@ -141,13 +141,25 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.pane.id.to_string(),
                         row.matches.get(*field),
-                        ForegroundColor::Default,
+                        field_color(*field),
                     );
                 }
             },
         }
     }
     spans
+}
+
+fn field_color(field: TemplateField) -> ForegroundColor {
+    match field {
+        TemplateField::Title => ForegroundColor::Cyan,
+        TemplateField::Dir => ForegroundColor::Blue,
+        TemplateField::Session => ForegroundColor::Magenta,
+        TemplateField::Tab => ForegroundColor::Orange,
+        TemplateField::Command => ForegroundColor::Green,
+        TemplateField::PaneId => ForegroundColor::DarkGray,
+        TemplateField::Progress | TemplateField::Icon => ForegroundColor::Default,
+    }
 }
 
 fn progress_glyph(state: ProgressState, spinner_tick: u64) -> (&'static str, ForegroundColor) {
