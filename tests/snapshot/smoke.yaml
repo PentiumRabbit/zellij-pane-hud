@@ -1,5 +1,5 @@
 name: smoke
-plugin: ../../dist/pane-hud.wasm
+plugin: ../../dist/pane-switcher.wasm
 config:
   icons: nerd
   row_format: "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"

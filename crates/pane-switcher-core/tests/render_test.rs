@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use pane_hud_core::config::Config;
-use pane_hud_core::model::{LivePane, NodeKey};
-use pane_hud_core::render::{render_frame, RenderOptions};
-use pane_hud_core::rows::{FieldMatches, ProgressState, Row, Rows};
+use pane_switcher_core::config::Config;
+use pane_switcher_core::model::{LivePane, NodeKey};
+use pane_switcher_core::render::{render_frame, RenderOptions};
+use pane_switcher_core::rows::{FieldMatches, ProgressState, Row, Rows};
 use unicode_width::UnicodeWidthStr;
 
 fn row(id: u32, title: &str, dir: &str, command: &str) -> Row {

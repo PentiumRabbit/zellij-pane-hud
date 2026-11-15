@@ -1,20 +1,20 @@
-# Zellij Pane HUD Core Implementation Plan
+# Zellij Pane Switcher Core Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:test-driven-development. Implement each task as a red-green-refactor cycle and keep the worktree runnable after every task.
 
 **Goal:** Build a tested, configurable Zellij session/tab/pane finder launched by a user-defined single keybinding.
 
-**Architecture:** A pure `pane-hud-core` crate owns world snapshots, filtering, selection, details, and rendering. A thin `pane-hud-plugin` `[[bin]]` registered with `register_plugin!` maps Zellij events and executes navigation actions.
+**Architecture:** A pure `pane-switcher-core` crate owns world snapshots, filtering, selection, details, and rendering. A thin `pane-switcher-plugin` `[[bin]]` registered with `register_plugin!` maps Zellij events and executes navigation actions.
 
 **Tech Stack:** Rust 2021, `zellij-tile` 0.45.1, `wasm32-wasip1`, `unicode-width`, standard-library tests.
 
-**Spec:** `docs/superpowers/specs/2026-11-14-zellij-pane-hud-core-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-14-zellij-pane-switcher-core-design.md`
 
 ## Global Constraints
 
 - Target Zellij 0.45.1 and Rust 1.93.0.
 - Do not poll commands or CWD; use events and one-time queries.
-- Keep `pane-hud-core` free of Zellij host calls.
+- Keep `pane-switcher-core` free of Zellij host calls.
 - Use stable composite node keys, never row positions.
 - Invalid configuration must degrade to defaults without panics.
 - Exclude plugin panes and impossible navigation targets.
@@ -26,10 +26,10 @@
 
 **Files:**
 - Create: `Cargo.toml`
-- Create: `crates/pane-hud-core/Cargo.toml`
-- Create: `crates/pane-hud-core/src/lib.rs`
-- Create: `crates/pane-hud-core/src/config.rs`
-- Create: `crates/pane-hud-core/tests/config_test.rs`
+- Create: `crates/pane-switcher-core/Cargo.toml`
+- Create: `crates/pane-switcher-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/config.rs`
+- Create: `crates/pane-switcher-core/tests/config_test.rs`
 
 **Interfaces:**
 - Produces: `Config`, `DetailsMode`, `IconsMode`, `Density`, `SearchMode`, `SortMode`, and `Config::from_map(&BTreeMap<String, String>)`.
@@ -52,7 +52,7 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 }
 ```
 
-- [ ] **Step 2: Run `cargo test -p pane-hud-core --test config_test` and observe the missing API failure.**
+- [ ] **Step 2: Run `cargo test -p pane-switcher-core --test config_test` and observe the missing API failure.**
 - [ ] **Step 3: Implement the config types and defaulting parser, including booleans, enums, percentage strings, and spinner bounds.**
 - [ ] **Step 4: Run the test and the full core test suite.**
 - [ ] **Step 5: Commit with `feat: add pane hud configuration model`.**
@@ -60,9 +60,9 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 2: Stable world snapshots
 
 **Files:**
-- Create: `crates/pane-hud-core/src/model.rs`
-- Create: `crates/pane-hud-core/tests/model_test.rs`
-- Modify: `crates/pane-hud-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/model.rs`
+- Create: `crates/pane-switcher-core/tests/model_test.rs`
+- Modify: `crates/pane-switcher-core/src/lib.rs`
 
 **Interfaces:**
 - Produces: `World`, `SessionInput`, `TabInput`, `PaneInput`, `PaneManifestInput`, `DeadSessionInput`, `NodeKey`.
@@ -77,9 +77,9 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 3: Fuzzy and substring search
 
 **Files:**
-- Create: `crates/pane-hud-core/src/search.rs`
-- Create: `crates/pane-hud-core/tests/search_test.rs`
-- Modify: `crates/pane-hud-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/search.rs`
+- Create: `crates/pane-switcher-core/tests/search_test.rs`
+- Modify: `crates/pane-switcher-core/src/lib.rs`
 
 **Interfaces:**
 - Produces: `MatchScore`, `score_subsequence`, `score_substring`, and `normalize_query`.
@@ -93,9 +93,9 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 4: Visible row model and filtering
 
 **Files:**
-- Create: `crates/pane-hud-core/src/rows.rs`
-- Create: `crates/pane-hud-core/tests/rows_test.rs`
-- Modify: `crates/pane-hud-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/rows.rs`
+- Create: `crates/pane-switcher-core/tests/rows_test.rs`
+- Modify: `crates/pane-switcher-core/src/lib.rs`
 
 **Interfaces:**
 - Produces: `Row`, `Rows`, `NodeKind`, and `Rows::build(&World, &Config, &str, &HashSet<NodeKey>, &CommandCache, &CwdCache)`.
@@ -109,11 +109,11 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 5: Input, selection, and icons
 
 **Files:**
-- Create: `crates/pane-hud-core/src/input.rs`
-- Create: `crates/pane-hud-core/src/icons.rs`
-- Create: `crates/pane-hud-core/tests/input_test.rs`
-- Create: `crates/pane-hud-core/tests/icons_test.rs`
-- Modify: `crates/pane-hud-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/input.rs`
+- Create: `crates/pane-switcher-core/src/icons.rs`
+- Create: `crates/pane-switcher-core/tests/input_test.rs`
+- Create: `crates/pane-switcher-core/tests/icons_test.rs`
+- Modify: `crates/pane-switcher-core/src/lib.rs`
 
 **Interfaces:**
 - Produces: `TextQuery`, `Selection`, `HudKey`, `HudAction`.
@@ -128,10 +128,10 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 6: Details and rendering
 
 **Files:**
-- Create: `crates/pane-hud-core/src/details.rs`
-- Create: `crates/pane-hud-core/src/render.rs`
-- Create: `crates/pane-hud-core/tests/render_test.rs`
-- Modify: `crates/pane-hud-core/src/lib.rs`
+- Create: `crates/pane-switcher-core/src/details.rs`
+- Create: `crates/pane-switcher-core/src/render.rs`
+- Create: `crates/pane-switcher-core/tests/render_test.rs`
+- Modify: `crates/pane-switcher-core/src/lib.rs`
 
 **Interfaces:**
 - Produces: `Details`, `DetailField`, `LayoutMode`, `RenderFrame`, and `render_frame(...)`.
@@ -145,9 +145,9 @@ fn configuration_defaults_and_invalid_values_are_safe() {
 ### Task 7: Zellij adapter and navigation
 
 **Files:**
-- Create: `crates/pane-hud-plugin/Cargo.toml`
-- Create: `crates/pane-hud-plugin/src/main.rs`
-- Create: `crates/pane-hud-plugin/src/adapter.rs`
+- Create: `crates/pane-switcher-plugin/Cargo.toml`
+- Create: `crates/pane-switcher-plugin/src/main.rs`
+- Create: `crates/pane-switcher-plugin/src/adapter.rs`
 - Modify: `Cargo.toml`
 
 **Interfaces:**

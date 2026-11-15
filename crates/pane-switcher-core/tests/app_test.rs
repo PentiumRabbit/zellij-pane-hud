@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use pane_hud_core::app::{Finder, NavigationTarget};
-use pane_hud_core::config::Config;
-use pane_hud_core::model::{NodeKey, PaneInput, PaneManifestInput, SessionInput, TabInput, World};
+use pane_switcher_core::app::{Finder, NavigationTarget};
+use pane_switcher_core::config::Config;
+use pane_switcher_core::model::{
+    NodeKey, PaneInput, PaneManifestInput, SessionInput, TabInput, World,
+};
 
 fn world_with(panes: Vec<PaneInput>) -> World {
     let mut world = World::default();

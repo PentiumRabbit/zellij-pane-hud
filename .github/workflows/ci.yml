@@ -103,17 +103,17 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          test -s dist/pane-hud.wasm
-          sha256sum dist/pane-hud.wasm |
-            awk '{ print $1 "  pane-hud.wasm" }' > dist/pane-hud.wasm.sha256
+          test -s dist/pane-switcher.wasm
+          sha256sum dist/pane-switcher.wasm |
+            awk '{ print $1 "  pane-switcher.wasm" }' > dist/pane-switcher.wasm.sha256
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v7
         with:
-          name: pane-hud-wasm
+          name: pane-switcher-wasm
           path: |
-            dist/pane-hud.wasm
-            dist/pane-hud.wasm.sha256
+            dist/pane-switcher.wasm
+            dist/pane-switcher.wasm.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -128,7 +128,7 @@ jobs:
       - name: Download WASM artifact
         uses: actions/download-artifact@v8
         with:
-          name: pane-hud-wasm
+          name: pane-switcher-wasm
           path: dist
 
       - name: Create or update release
@@ -138,16 +138,16 @@ jobs:
           tag="$GITHUB_REF_NAME"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" \
-              dist/pane-hud.wasm \
-              dist/pane-hud.wasm.sha256 \
+              dist/pane-switcher.wasm \
+              dist/pane-switcher.wasm.sha256 \
               --clobber \
               --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" \
-              dist/pane-hud.wasm \
-              dist/pane-hud.wasm.sha256 \
+              dist/pane-switcher.wasm \
+              dist/pane-switcher.wasm.sha256 \
               --verify-tag \
               --generate-notes \
-              --title "pane-hud $tag" \
+              --title "pane-switcher $tag" \
               --repo "$GITHUB_REPOSITORY"
           fi

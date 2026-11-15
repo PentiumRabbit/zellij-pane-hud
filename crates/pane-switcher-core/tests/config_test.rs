@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use pane_hud_core::config::{Config, DetailsMode, Scope};
-use pane_hud_core::template::{RowTemplate, TemplateField};
+use pane_switcher_core::config::{Config, DetailsMode, Scope};
+use pane_switcher_core::template::{RowTemplate, TemplateField};
 
 #[test]
 fn configuration_parses_values_and_falls_back_per_field() {

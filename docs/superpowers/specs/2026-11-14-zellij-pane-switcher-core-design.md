@@ -1,4 +1,4 @@
-# Zellij Pane HUD Core Design
+# Zellij Pane Switcher Core Design
 
 Status: implemented; updated for the flat pane-template release.
 
@@ -22,11 +22,11 @@ therefore remains in the user's Zellij config and is easy to customize.
 ## Workspace architecture
 
 ```text
-crates/pane-hud-core
+crates/pane-switcher-core
   deterministic, host-testable configuration, model, search, rows,
   selection, template, style, icons, and renderer
 
-crates/pane-hud-plugin
+crates/pane-switcher-plugin
   Zellij event adapter, command/CWD cache updates, keyboard translation,
   navigation actions, permissions, and render output
 ```

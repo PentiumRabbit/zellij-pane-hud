@@ -1,5 +1,5 @@
 name: template
-plugin: ../../dist/pane-hud.wasm
+plugin: ../../dist/pane-switcher.wasm
 config:
   icons: plain
   row_format: "{icon} {session}/{tab} {title}  {dir}  {command}"

@@ -38,7 +38,7 @@ The default format is:
 For example:
 
 ```text
-◓ ❉ fix search rendering  crates/pane-hud-core  work/code  codex --full-auto  #3
+◓ ❉ fix search rendering  crates/pane-switcher-core  work/code  codex --full-auto  #3
 ○ >_ zsh  .  work/shell  zsh  #7
 ✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```

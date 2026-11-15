@@ -4,7 +4,7 @@ Status: implemented flat pane-template HUD.
 
 ## Product definition
 
-`zellij-pane-hud` is a temporary floating pane picker for Zellij. It combines:
+`zellij-pane-switcher` is a temporary floating pane picker for Zellij. It combines:
 
 - the compact visual language of a HUD;
 - search-first pane selection;
@@ -38,7 +38,7 @@ Selection is restored by stable session/tab/pane identity across row rebuilds.
 Example:
 
 ```text
-◓ ❉ fix search rendering  crates/pane-hud-core  work/code  codex --full-auto  #3
+◓ ❉ fix search rendering  crates/pane-switcher-core  work/code  codex --full-auto  #3
 ○ >_ zsh  .  work/shell  zsh  #7
 ✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```
@@ -210,7 +210,7 @@ walking all prior rows. A 10,000-row regression verifies bounded rendering.
 ## Architecture
 
 ```text
-crates/pane-hud-core/
+crates/pane-switcher-core/
   app.rs       Finder state, selection, query, rebuild thresholds
   rows.rs      flat pane rows, relative dirs, field-scoped search
   input.rs     UTF-8 query editing and stable selection
@@ -221,7 +221,7 @@ crates/pane-hud-core/
   template.rs  row template parser and field metadata
   render.rs    flat viewport renderer
 
-crates/pane-hud-plugin/
+crates/pane-switcher-plugin/
   adapter.rs   Zellij event/key/action translation
   plugin.rs    plugin lifecycle, event subscriptions, navigation
 ```

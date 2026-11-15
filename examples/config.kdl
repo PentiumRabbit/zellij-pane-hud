@@ -1,6 +1,6 @@
 // Published automatically by the v* tag workflow.
 plugins {
-    pane-hud location="https://github.com/PentiumRabbit/zellij-pane-hud/releases/latest/download/pane-hud.wasm" {
+    pane-switcher location="https://github.com/PentiumRabbit/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
@@ -14,7 +14,7 @@ keybinds {
     shared_except "locked" {
         bind "Ctrl Shift e" {
             SwitchToMode "normal"
-            LaunchOrFocusPlugin "pane-hud" {
+            LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
             }
@@ -24,7 +24,7 @@ keybinds {
     // Fallback through Zellij's existing session leader: Ctrl+o, then g.
     session {
         bind "g" {
-            LaunchOrFocusPlugin "pane-hud" {
+            LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
             }
