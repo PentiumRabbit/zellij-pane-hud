@@ -50,3 +50,14 @@ fn invalid_unknown_and_unterminated_tokens_remain_literal() {
 fn empty_format_uses_the_default_template() {
     assert_eq!(RowTemplate::parse(""), RowTemplate::default());
 }
+
+#[test]
+fn templates_report_whether_they_render_a_field() {
+    let template = RowTemplate::parse("{progress} {title} {dir}");
+
+    assert!(template.contains(TemplateField::Progress));
+    assert!(template.contains(TemplateField::Title));
+    assert!(template.contains(TemplateField::Dir));
+    assert!(!template.contains(TemplateField::Command));
+    assert!(!template.contains(TemplateField::Icon));
+}

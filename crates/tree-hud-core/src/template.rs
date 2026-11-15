@@ -60,6 +60,12 @@ impl RowTemplate {
         &self.search_fields
     }
 
+    pub fn contains(&self, field: TemplateField) -> bool {
+        self.parts
+            .iter()
+            .any(|part| matches!(part, TemplatePart::Field(candidate) if *candidate == field))
+    }
+
     fn parse_non_empty(input: &str) -> Self {
         let chars = input.chars().collect::<Vec<_>>();
         let mut parts = Vec::new();

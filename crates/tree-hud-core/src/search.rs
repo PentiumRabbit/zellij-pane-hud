@@ -106,11 +106,3 @@ pub(crate) fn match_subsequence_lowercase(query: &str, text: &str) -> Option<Mat
         positions: matched_positions,
     })
 }
-
-pub(crate) fn score_subsequence_lowercase(query: &str, text: &str) -> Option<MatchScore> {
-    match_subsequence_lowercase(query, text).map(|result| result.score)
-}
-
-pub(crate) fn score_substring_lowercase(query: &str, text: &str) -> Option<MatchScore> {
-    match_substring_lowercase(query, text).map(|result| result.score)
-}
