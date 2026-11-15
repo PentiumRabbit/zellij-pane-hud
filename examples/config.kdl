@@ -1,0 +1,23 @@
+// Replace /absolute/path with this repository's absolute checkout path.
+plugins {
+    tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
+        scope "all"
+        row_format "{progress} {icon} {title}  {dir}"
+        icons "nerd"
+        search_mode "fuzzy"
+        spinner_fps "4"
+    }
+}
+
+keybinds {
+    // Use Zellij's existing session leader: Ctrl+o, then g.
+    session {
+        bind "g" {
+            LaunchOrFocusPlugin "tree-hud" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "Normal"
+        }
+    }
+}

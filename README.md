@@ -1,67 +1,212 @@
 # zellij-tree-hud
 
-A HUD-style finder for Zellij sessions, tabs and panes.
+A floating, search-first pane picker for Zellij. Every terminal pane appears on
+one compact row with a colored running-state indicator, pane/command icon,
+title, and directory relative to the currently focused pane.
 
-The project is currently in the design and research phase. No plugin
-implementation exists yet.
-
-## Goal
-
-Press a configurable shortcut to open a floating search window, browse a tree
-of:
+Type to fuzzy-filter the pane list, then press Enter to focus the selected pane
+in the current or another live session.
 
 ```text
-session
-└── tab
-    ├── pane  running command
-    └── pane  shell
+╭─ FIND ───────────────────────────────────────────────╮
+│ › sr                                          Esc   │
+├──────────────────────────────────────────────────────┤
+│ ◓ ❉ src renderer  src/ui                            │
+│ ○ 󰈙 editor notes  workspace/notes                   │
+│ ✖ >_ old shell     /tmp/elsewhere                   │
+│ ↑↓ move  Enter jump  Esc close                      │
+╰──────────────────────────────────────────────────────╯
 ```
 
-Type to fuzzy-filter the tree, move with the keyboard, and press Enter to jump
-directly to the selected terminal pane. Cross-session pane jumps should switch
-to the target session and focus the pane in one operation.
+## Features
 
-The visual language should follow `zellij-hud`: compact, low-chrome, Nerd Font
-icons, and useful status cues without a permanent sidebar.
+- One terminal pane per row; no session/tab hierarchy, folding, or detail
+  panel.
+- Configurable row templates with title, relative directory, progress, icon,
+  session, tab, command, and pane ID fields.
+- Template-scoped fuzzy or substring search. Hidden fields do not participate
+  in matching.
+- UTF-8-safe match highlighting: matched characters are bold yellow.
+- Semantic colors for running, idle, exited, unknown, Codex, Claude, editors,
+  and other commands.
+- Full-width dark-blue selected-row background while preserving icon and match
+  colors.
+- Stable pane selection across Zellij updates and one-step cross-session pane
+  focus.
+- Nerd Font and plain-text icon modes.
+- Viewport-bounded rendering and cached search rows. Selection movement,
+  rendering, and spinner frames do not rebuild search results.
 
-## Desired defaults
+## Default row
 
-- Search scope: all live sessions plus resurrectable sessions.
-- Tree levels: session, tab and pane.
-- Current session: live command and pane-state icons.
-- Other live sessions: structural tree and best-effort status.
-- Resurrectable sessions: leaf nodes because their tabs and panes are not live.
-- The selected pane shows whether work is running, its current directory and
-  its full foreground command.
-- Enter on a session focuses that session.
-- Enter on a tab focuses that tab.
-- Enter on a pane switches to the session, tab and pane.
-- Esc closes the popup.
-- Up/Down, `Ctrl+p`/`Ctrl+n`, Backspace and direct typing operate inside the
-  finder.
+```text
+{progress} {icon} {title}  {dir}
+```
 
-All three tree levels are intended to be configurable.
+Supported fields:
 
-## Shortcut
+| Field | Meaning |
+|---|---|
+| `{progress}` | Colored running, idle, exited, or unknown indicator |
+| `{icon}` | Colored pane or command category icon |
+| `{title}` | Pane title, falling back to `pane <id>` |
+| `{dir}` | Pane CWD relative to the focused pane CWD |
+| `{session}` | Live session name |
+| `{tab}` | Tab name |
+| `{command}` | Cached foreground command or initial-command fallback |
+| `{pane_id}` | Numeric terminal pane ID |
 
-The requested sequence is `Ctrl+Space`, then `Space`. Zellij 0.45.1 does not
-allow user-defined input modes, so this sequence needs a small background
-launcher and a timeout. A single `Ctrl+Space` remains the simplest fallback.
+Only text fields present in the active format are searchable. The default
+format therefore searches title and relative directory. Adding `{command}` or
+`{session}` automatically adds that field to the search corpus.
 
-See [Research](docs/RESEARCH.md) for the tested constraint.
+`{{` and `}}` emit literal braces. Unknown or unterminated placeholders remain
+literal. An empty format falls back to the default.
 
-## Documentation
+More examples:
 
-- [Design proposal](docs/DESIGN.md)
-- [Technical research](docs/RESEARCH.md)
-- [Prototype fixtures](prototypes/README.md)
+```text
+{progress} {icon} {title}  {dir}
+{icon} {session}/{tab} {title}  {dir}  {command}
+{progress} {title} [{dir}]
+```
 
-## Status
+`{dir}` uses path components, not string prefixes:
 
-- [x] Version-specific API research
-- [x] Existing-plugin comparison
-- [x] Initial UX and architecture proposal
-- [x] Pane status, CWD and command details in the design
-- [ ] User review of the design
-- [ ] Implementation plan
-- [ ] Rust/WASM implementation
+- equal to the focused pane CWD: `.`;
+- a descendant: the relative path;
+- an unrelated or sibling-prefix path: the absolute path;
+- unavailable: `?`.
+
+For example, `/work/app` is not treated as the parent of
+`/work/application`.
+
+## Performance model
+
+The expected working set is tens to a few hundred panes.
+
+- The template is parsed once when the plugin loads.
+- Search runs only when the query, pane structure, relevant description data,
+  or configured search fields change.
+- Command/CWD changes rebuild rows only when the template renders or searches
+  a dependent field.
+- Rendering visits only the visible viewport rather than all preceding rows.
+- Selection changes and spinner frames reuse cached rows.
+- Command/CWD queries are event-driven with bounded retries. Idle shells do not
+  schedule spinner timers.
+- Regression coverage includes 2,000-pane updates and a 10,000-row viewport.
+
+## Build
+
+Requirements:
+
+- Rust 1.93.0
+- Zellij 0.45.1
+- `wasm32-wasip1`
+
+```bash
+rustup target add wasm32-wasip1
+./scripts/build-wasm.sh
+```
+
+The build script writes `dist/tree-hud.wasm`.
+
+Run the full verification suite:
+
+```bash
+cargo fmt --all -- --check
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+./scripts/build-wasm.sh
+./scripts/check-snapshot.sh
+zellij --config examples/config.kdl setup --check
+```
+
+`check-snapshot.sh` requires `zellij-plugin-snapshot 0.2.3`.
+
+## Zellij configuration
+
+Zellij plugins do not define their own global shortcut API. Bind the plugin in
+ordinary Zellij KDL. The example reuses Zellij's existing session leader:
+press `Ctrl+o`, then `g`.
+
+```kdl
+plugins {
+    tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
+        scope "all"
+        row_format "{progress} {icon} {title}  {dir}"
+        icons "nerd"
+        search_mode "fuzzy"
+        spinner_fps "4"
+    }
+}
+
+keybinds {
+    session {
+        bind "g" {
+            LaunchOrFocusPlugin "tree-hud" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "Normal"
+        }
+    }
+}
+```
+
+Change the final `"g"` binding to any unused key in Zellij's session mode.
+Restart Zellij or reload the config after changing the binding.
+
+See [`examples/config.kdl`](examples/config.kdl) for a complete example.
+Earlier `Ctrl+Space` and `Ctrl+g` candidates conflicted with the local setup and
+are not registered by this plugin.
+
+## Keyboard controls
+
+| Key | Action |
+|---|---|
+| `Ctrl+o`, then `g` | Open or focus the HUD |
+| Printable text | Edit the search query |
+| Backspace | Delete one character |
+| `Ctrl+w` | Delete the previous word |
+| `Ctrl+u` | Clear the query |
+| Up / `Ctrl+p` | Select previous pane row |
+| Down / `Ctrl+n` | Select next pane row |
+| PageUp / PageDown | Move by ten rows |
+| Enter | Focus the selected pane and close |
+| Esc | Close without navigation |
+| Left / Right | No action |
+
+## Configuration
+
+Unknown keys are ignored. Invalid values fall back per field.
+
+```kdl
+scope "all"                    // current | all
+row_format "{progress} {icon} {title}  {dir}"
+icons "nerd"                   // nerd | plain
+search_mode "fuzzy"            // fuzzy | substring
+spinner_fps "4"
+follow_current_session "true"
+```
+
+Legacy tree/detail keys are still accepted so existing configs do not fail,
+but they no longer affect layout or search. Use `row_format` to choose visible
+and searchable fields.
+
+## Permissions and limitations
+
+The plugin requests Zellij application-state access and permission to change
+pane/session focus.
+
+- Live command and CWD values are reliably available for panes in the current
+  session. Other live sessions may display `?` or an unknown progress state.
+- Only live selectable terminal panes are listed. Plugin panes, unselectable UI
+  panes, and resurrectable sessions without live panes are excluded.
+- Zellij 0.45.1 does not expose plugin-defined global shortcuts, so launching
+  remains a user-configured Zellij keybinding.
+- Zellij 0.45.1 `LaunchOrFocusPlugin` does not provide width or height options;
+  the native floating-pane size is used.
+
+See [the design](docs/DESIGN.md) and
+[technical research](docs/RESEARCH.md) for implementation details.
