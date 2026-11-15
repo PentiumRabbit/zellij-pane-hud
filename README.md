@@ -159,6 +159,7 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
+                skip_plugin_cache true
             }
         }
     }
@@ -167,6 +168,7 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
+                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
@@ -174,8 +176,12 @@ keybinds {
 }
 ```
 
-The release URL automatically follows the latest published release. For local
-development, replace it with
+The release URL automatically follows the latest published release.
+`skip_plugin_cache true` makes each newly opened plugin pane resolve and fetch
+that latest asset instead of reusing an older cached version; focusing an
+already open pane does not download it again. For the fastest startup or a
+fixed version, use a versioned release URL and remove `skip_plugin_cache`.
+For local development, replace the location with
 `file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm`.
 
 Both shortcuts are configurable. `Ctrl+Shift+e` launches directly from normal
