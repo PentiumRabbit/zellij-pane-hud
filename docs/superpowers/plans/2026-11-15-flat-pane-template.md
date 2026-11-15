@@ -29,18 +29,19 @@
 ### Task 1: Row Template Parser and Configuration
 
 **Files:**
-- Create: `crates/tree-hud-core/src/template.rs`
-- Create: `crates/tree-hud-core/tests/template_test.rs`
-- Modify: `crates/tree-hud-core/src/lib.rs`
-- Modify: `crates/tree-hud-core/src/config.rs`
-- Modify: `crates/tree-hud-core/tests/config_test.rs`
+- Create: `crates/pane-hud-core/src/template.rs`
+- Create: `crates/pane-hud-core/tests/template_test.rs`
+- Modify: `crates/pane-hud-core/src/lib.rs`
+- Modify: `crates/pane-hud-core/src/config.rs`
+- Modify: `crates/pane-hud-core/tests/config_test.rs`
 
 **Interfaces:**
 
 Produces:
 
 ```rust
-pub const DEFAULT_ROW_FORMAT: &str = "{progress} {icon} {title}  {dir}";
+pub const DEFAULT_ROW_FORMAT: &str =
+    "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TemplateField {
@@ -87,10 +88,10 @@ pub row_format: RowTemplate,
 
 - [ ] **Step 1: Write failing template parser tests**
 
-Create `crates/tree-hud-core/tests/template_test.rs`:
+Create `crates/pane-hud-core/tests/template_test.rs`:
 
 ```rust
-use tree_hud_core::template::{RowTemplate, TemplateField, TemplatePart};
+use pane_hud_core::template::{RowTemplate, TemplateField, TemplatePart};
 
 #[test]
 fn parses_fields_literals_and_escaped_braces() {
@@ -149,10 +150,10 @@ fn empty_format_uses_the_default_template() {
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test template_test
+cargo test -p pane-hud-core --test template_test
 ```
 
-Expected: compilation fails because `tree_hud_core::template` does not exist.
+Expected: compilation fails because `pane_hud_core::template` does not exist.
 
 - [ ] **Step 3: Implement the minimal parser**
 
@@ -176,7 +177,7 @@ pub mod template;
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test template_test
+cargo test -p pane-hud-core --test template_test
 ```
 
 Expected: PASS.
@@ -214,7 +215,7 @@ Import `RowTemplate` and `TemplateField`.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test config_test row_format_is_parsed_and_invalid_values_fall_back
+cargo test -p pane-hud-core --test config_test row_format_is_parsed_and_invalid_values_fall_back
 ```
 
 Expected: compilation fails because `Config::row_format` does not exist.
@@ -232,8 +233,8 @@ keys without using them for layout.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test template_test
-cargo test -p tree-hud-core --test config_test
+cargo test -p pane-hud-core --test template_test
+cargo test -p pane-hud-core --test config_test
 cargo test --workspace
 ```
 
@@ -242,11 +243,11 @@ Expected: PASS.
 - [ ] **Step 9: Commit**
 
 ```bash
-git add crates/tree-hud-core/src/template.rs \
-  crates/tree-hud-core/src/lib.rs \
-  crates/tree-hud-core/src/config.rs \
-  crates/tree-hud-core/tests/template_test.rs \
-  crates/tree-hud-core/tests/config_test.rs
+git add crates/pane-hud-core/src/template.rs \
+  crates/pane-hud-core/src/lib.rs \
+  crates/pane-hud-core/src/config.rs \
+  crates/pane-hud-core/tests/template_test.rs \
+  crates/pane-hud-core/tests/config_test.rs
 git commit -m "feat: add configurable row templates"
 ```
 
@@ -255,8 +256,8 @@ git commit -m "feat: add configurable row templates"
 ### Task 2: UTF-8 Match Positions
 
 **Files:**
-- Modify: `crates/tree-hud-core/src/search.rs`
-- Modify: `crates/tree-hud-core/tests/search_test.rs`
+- Modify: `crates/pane-hud-core/src/search.rs`
+- Modify: `crates/pane-hud-core/tests/search_test.rs`
 
 **Interfaces:**
 
@@ -303,7 +304,7 @@ Import the new functions.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test search_test
+cargo test -p pane-hud-core --test search_test
 ```
 
 Expected: compilation fails because match-position APIs do not exist.
@@ -327,7 +328,7 @@ Normalize query/text lowercase before scanning, matching current behavior.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test search_test
+cargo test -p pane-hud-core --test search_test
 cargo test --workspace
 ```
 
@@ -336,8 +337,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add crates/tree-hud-core/src/search.rs \
-  crates/tree-hud-core/tests/search_test.rs
+git add crates/pane-hud-core/src/search.rs \
+  crates/pane-hud-core/tests/search_test.rs
 git commit -m "feat: return fuzzy match positions"
 ```
 
@@ -346,11 +347,11 @@ git commit -m "feat: return fuzzy match positions"
 ### Task 3: Flat Pane Rows, Relative Directories, and Searchable Template Fields
 
 **Files:**
-- Rewrite: `crates/tree-hud-core/src/rows.rs`
-- Rewrite: `crates/tree-hud-core/tests/rows_test.rs`
-- Modify: `crates/tree-hud-core/src/icons.rs`
-- Modify: `crates/tree-hud-core/tests/icons_test.rs`
-- Modify: `crates/tree-hud-core/src/app.rs`
+- Rewrite: `crates/pane-hud-core/src/rows.rs`
+- Rewrite: `crates/pane-hud-core/tests/rows_test.rs`
+- Modify: `crates/pane-hud-core/src/icons.rs`
+- Modify: `crates/pane-hud-core/tests/icons_test.rs`
+- Modify: `crates/pane-hud-core/src/app.rs`
 
 **Interfaces:**
 
@@ -463,7 +464,7 @@ the helper under test.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test rows_test
+cargo test -p pane-hud-core --test rows_test
 ```
 
 Expected: old tree-row behavior violates flat counts and/or APIs do not compile.
@@ -525,9 +526,9 @@ Left/Right actions become no-ops in the application layer; do not rebuild rows.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test rows_test
-cargo test -p tree-hud-core --test icons_test
-cargo test -p tree-hud-core --test app_test
+cargo test -p pane-hud-core --test rows_test
+cargo test -p pane-hud-core --test icons_test
+cargo test -p pane-hud-core --test app_test
 cargo test --workspace
 ```
 
@@ -536,12 +537,12 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add crates/tree-hud-core/src/rows.rs \
-  crates/tree-hud-core/src/icons.rs \
-  crates/tree-hud-core/src/app.rs \
-  crates/tree-hud-core/tests/rows_test.rs \
-  crates/tree-hud-core/tests/icons_test.rs \
-  crates/tree-hud-core/tests/app_test.rs
+git add crates/pane-hud-core/src/rows.rs \
+  crates/pane-hud-core/src/icons.rs \
+  crates/pane-hud-core/src/app.rs \
+  crates/pane-hud-core/tests/rows_test.rs \
+  crates/pane-hud-core/tests/icons_test.rs \
+  crates/pane-hud-core/tests/app_test.rs
 git commit -m "feat: build flat pane rows"
 ```
 
@@ -550,9 +551,9 @@ git commit -m "feat: build flat pane rows"
 ### Task 4: Width-Safe Styled Span Primitives
 
 **Files:**
-- Create: `crates/tree-hud-core/src/style.rs`
-- Create: `crates/tree-hud-core/tests/style_test.rs`
-- Modify: `crates/tree-hud-core/src/lib.rs`
+- Create: `crates/pane-hud-core/src/style.rs`
+- Create: `crates/pane-hud-core/tests/style_test.rs`
+- Modify: `crates/pane-hud-core/src/lib.rs`
 
 **Interfaces:**
 
@@ -591,7 +592,7 @@ pub fn spans_to_ansi(spans: &[StyledSpan], color: bool) -> String;
 Create `style_test.rs`:
 
 ```rust
-use tree_hud_core::style::{
+use pane_hud_core::style::{
     pad_spans, spans_to_ansi, truncate_spans, ForegroundColor, StyledSpan,
 };
 
@@ -644,10 +645,10 @@ fn ansi_combines_foreground_bold_and_selected_background() {
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test style_test
+cargo test -p pane-hud-core --test style_test
 ```
 
-Expected: compilation fails because `tree_hud_core::style` does not exist.
+Expected: compilation fails because `pane_hud_core::style` does not exist.
 
 - [ ] **Step 3: Implement span width and ANSI conversion**
 
@@ -680,8 +681,8 @@ Expose `pub mod style;` from `lib.rs`.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test style_test
-cargo test -p tree-hud-core
+cargo test -p pane-hud-core --test style_test
+cargo test -p pane-hud-core
 ```
 
 Expected: PASS.
@@ -689,9 +690,9 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add crates/tree-hud-core/src/style.rs \
-  crates/tree-hud-core/src/lib.rs \
-  crates/tree-hud-core/tests/style_test.rs
+git add crates/pane-hud-core/src/style.rs \
+  crates/pane-hud-core/src/lib.rs \
+  crates/pane-hud-core/tests/style_test.rs
 git commit -m "feat: add width-safe styled spans"
 ```
 
@@ -700,17 +701,17 @@ git commit -m "feat: add width-safe styled spans"
 ### Task 5: Flat Renderer, Finder, and Zellij Integration
 
 **Files:**
-- Rewrite: `crates/tree-hud-core/src/render.rs`
-- Rewrite: `crates/tree-hud-core/tests/render_test.rs`
-- Modify: `crates/tree-hud-core/src/app.rs`
-- Modify: `crates/tree-hud-core/src/icons.rs`
-- Modify: `crates/tree-hud-core/tests/app_test.rs`
-- Modify: `crates/tree-hud-core/src/lib.rs`
-- Modify: `crates/tree-hud-plugin/src/plugin.rs`
-- Modify: `crates/tree-hud-plugin/src/adapter.rs`
-- Modify: `crates/tree-hud-plugin/tests/adapter_test.rs`
-- Delete: `crates/tree-hud-core/src/details.rs`
-- Delete: `crates/tree-hud-core/tests/details_test.rs`
+- Rewrite: `crates/pane-hud-core/src/render.rs`
+- Rewrite: `crates/pane-hud-core/tests/render_test.rs`
+- Modify: `crates/pane-hud-core/src/app.rs`
+- Modify: `crates/pane-hud-core/src/icons.rs`
+- Modify: `crates/pane-hud-core/tests/app_test.rs`
+- Modify: `crates/pane-hud-core/src/lib.rs`
+- Modify: `crates/pane-hud-plugin/src/plugin.rs`
+- Modify: `crates/pane-hud-plugin/src/adapter.rs`
+- Modify: `crates/pane-hud-plugin/tests/adapter_test.rs`
+- Delete: `crates/pane-hud-core/src/details.rs`
+- Delete: `crates/pane-hud-core/tests/details_test.rs`
 
 **Interfaces:**
 
@@ -831,7 +832,7 @@ sequences and asserts each line's `UnicodeWidthStr <= 60`.
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test render_test
+cargo test -p pane-hud-core --test render_test
 ```
 
 Expected: the old renderer still requires details/layout arguments and emits
@@ -885,7 +886,7 @@ Add to plugin tests:
 ```rust
 #[test]
 fn left_and_right_keys_do_not_request_render() {
-    let mut plugin = TreeHudPlugin::default();
+    let mut plugin = PaneHudPlugin::default();
     assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Left)));
     assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Right)));
 }
@@ -915,9 +916,9 @@ fn spinner_and_vertical_selection_reuse_rows() {
 Run:
 
 ```bash
-cargo test -p tree-hud-core --test render_test
-cargo test -p tree-hud-core
-cargo test -p tree-hud-plugin
+cargo test -p pane-hud-core --test render_test
+cargo test -p pane-hud-core
+cargo test -p pane-hud-plugin
 ```
 
 Expected: PASS.
@@ -925,8 +926,8 @@ Expected: PASS.
 - [ ] **Step 8: Remove details module and tests**
 
 ```bash
-git rm crates/tree-hud-core/src/details.rs \
-  crates/tree-hud-core/tests/details_test.rs
+git rm crates/pane-hud-core/src/details.rs \
+  crates/pane-hud-core/tests/details_test.rs
 ```
 
 Remove `pub mod details;` from `lib.rs`.
@@ -944,15 +945,15 @@ Expected: PASS.
 - [ ] **Step 10: Commit**
 
 ```bash
-git add crates/tree-hud-core/src/render.rs \
-  crates/tree-hud-core/src/app.rs \
-  crates/tree-hud-core/src/icons.rs \
-  crates/tree-hud-core/src/lib.rs \
-  crates/tree-hud-core/tests/render_test.rs \
-  crates/tree-hud-core/tests/app_test.rs \
-  crates/tree-hud-plugin/src/plugin.rs \
-  crates/tree-hud-plugin/src/adapter.rs \
-  crates/tree-hud-plugin/tests/adapter_test.rs
+git add crates/pane-hud-core/src/render.rs \
+  crates/pane-hud-core/src/app.rs \
+  crates/pane-hud-core/src/icons.rs \
+  crates/pane-hud-core/src/lib.rs \
+  crates/pane-hud-core/tests/render_test.rs \
+  crates/pane-hud-core/tests/app_test.rs \
+  crates/pane-hud-plugin/src/plugin.rs \
+  crates/pane-hud-plugin/src/adapter.rs \
+  crates/pane-hud-plugin/tests/adapter_test.rs
 git commit -m "feat: integrate flat colored pane rows"
 ```
 
@@ -965,7 +966,7 @@ git commit -m "feat: integrate flat colored pane rows"
 - Modify: `examples/config.kdl`
 - Modify: `docs/DESIGN.md`
 - Modify: `docs/RESEARCH.md`
-- Modify: `docs/superpowers/specs/2026-11-14-zellij-tree-hud-core-design.md`
+- Modify: `docs/superpowers/specs/2026-11-14-zellij-pane-hud-core-design.md`
 - Modify: `tests/snapshot/smoke.yaml`
 - Create: `tests/snapshot/template.yaml`
 
@@ -978,9 +979,9 @@ multi-state visual fixtures.
 
 ```kdl
 plugins {
-    tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
+    pane-hud location="file:/absolute/path/dist/pane-hud.wasm" {
         scope "all"
-        row_format "{progress} {icon} {title}  {dir}"
+        row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
         search_mode "fuzzy"
         spinner_fps "4"
@@ -991,7 +992,7 @@ plugins {
 Document additional examples:
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 {icon} {session}/{tab} {title}  {dir}  {command}
 {progress} {title} [{dir}]
 ```
@@ -1059,7 +1060,7 @@ In a fresh session:
 
 ```bash
 git add README.md examples/config.kdl docs/DESIGN.md docs/RESEARCH.md \
-  docs/superpowers/specs/2026-11-14-zellij-tree-hud-core-design.md \
+  docs/superpowers/specs/2026-11-14-zellij-pane-hud-core-design.md \
   tests/snapshot/smoke.yaml tests/snapshot/template.yaml scripts/check-snapshot.sh
 git commit -m "docs: document flat template pane HUD"
 ```

@@ -32,15 +32,15 @@ order.
 The default format is:
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 ```
 
 For example:
 
 ```text
-◓ ❉ fix search rendering  crates/tree-hud-core
-○ >_ zsh                  .
-✖ 󰈙 old editor            workspace
+◓ ❉ fix search rendering  crates/pane-hud-core  work/code  codex --full-auto  #3
+○ >_ zsh  .  work/shell  zsh  #7
+✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```
 
 The progress field is deliberately near the beginning so running state is easy
@@ -93,11 +93,15 @@ Fuzzy mode returns both a score and the matched character positions.
 Substring mode returns the contiguous matched character range.
 
 - Only text fields present in `row_format` are searched. The default format
-  therefore searches title and relative directory.
+  therefore searches title, relative directory, session, tab, command, and
+  pane ID.
 - Text fields added to the format, such as `{command}` or `{session}`, become
   searchable automatically.
 - Matching is case-insensitive across UTF-8 text.
 - Match positions are tracked as character indices, not byte offsets.
+- Fuzzy matching is also performed across the visible searchable fields in
+  template order, allowing query characters to be separated by field
+  boundaries.
 - Matched characters use bold yellow foreground.
 - A row is included if any visible search field matches.
 - If the same row has matches in multiple fields, all visible matched segments
@@ -108,22 +112,27 @@ Substring mode returns the contiguous matched character range.
 Colors remain enabled in both Nerd and plain glyph modes. The glyph mode only
 changes icon characters.
 
-Default semantic colors:
+Semantic roles are mapped to the active Zellij theme through
+`ModeUpdate(ModeInfo)`:
 
 | State/Field | Color |
 |---|---|
-| focused | green |
-| running command | cyan |
-| idle shell | gray |
-| Codex | magenta |
-| Claude | orange |
-| editor | blue |
-| exited | red |
-| unknown | dim gray |
+| focused | Zellij green emphasis |
+| running command | Zellij cyan emphasis |
+| idle shell | normal text color |
+| Codex | Zellij magenta emphasis |
+| Claude | Zellij orange emphasis |
+| editor | theme blue |
+| exited | Zellij error color |
+| unknown | normal text color |
 | title | normal foreground |
-| directory | blue |
-| fuzzy highlight | bold yellow |
-| selected row background | dark blue |
+| directory | theme blue |
+| fuzzy highlight | bold theme yellow |
+| selected row foreground/background | Zellij `text_selected` |
+
+The plugin keeps semantic roles but no longer hard-codes a palette after
+receiving `ModeUpdate`. Missing optional theme slots fall back to the normal
+text color.
 
 Selected-row background spans the entire terminal width. State colors and match
 foregrounds remain visible on top of that background.
@@ -142,7 +151,7 @@ foregrounds remain visible on top of that background.
 The active configuration becomes:
 
 ```kdl
-row_format "{progress} {icon} {title}  {dir}"
+row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
 scope "all"                    // current | all
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring

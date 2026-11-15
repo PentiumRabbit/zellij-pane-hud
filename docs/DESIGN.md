@@ -1,366 +1,327 @@
-# Design proposal
+# Design
 
-Status: draft for review. No implementation has started.
+Status: implemented flat pane-template HUD.
 
 ## Product definition
 
-`zellij-tree-hud` is a temporary, floating search UI for jumping to sessions,
-tabs and panes. It combines:
+`zellij-pane-hud` is a temporary floating pane picker for Zellij. It combines:
 
-- the compact visual language of `zellij-hud`;
-- the search-first interaction of Neovim pickers;
-- a session/tab/pane tree;
-- live pane-state icons and selected-pane details;
-- direct cross-session pane focus.
+- the compact visual language of a HUD;
+- search-first pane selection;
+- one line per terminal pane;
+- configurable row templates;
+- colored progress and command-category icons;
+- direct current-session and cross-session pane focus.
 
-It is not a permanent sidebar and does not replace `zellij-hud`.
+It is not a permanent sidebar and does not render a session/tab tree.
 
-## User flow
+## Interaction
 
-1. The user invokes the finder from a configurable shortcut.
-2. A centered floating pane opens with focus in the search field.
-3. The tree shows live sessions first, with expandable tabs and panes.
-4. Typing filters the tree and automatically expands matching branches.
-5. Up/Down selects a session, tab or pane.
-6. Enter jumps to the selected target and closes the finder.
-7. Esc closes the finder without navigation.
+1. The user opens the configured floating plugin.
+2. Every live selectable terminal pane is represented by exactly one row.
+3. Typing filters rows using only text fields present in `row_format`.
+4. Up/Down and `Ctrl+p`/`Ctrl+n` move through the flat result list.
+5. Left/Right are ignored.
+6. Enter focuses the selected pane, closes the HUD, and switches sessions when
+   necessary.
+7. Esc closes without navigation.
 
-Proposed visual:
+The focused pane is selected initially when `follow_current_session=true`.
+Selection is restored by stable session/tab/pane identity across row rebuilds.
+
+## Default row
 
 ```text
-╭─ FIND ─────────────────────────────────────────────╮
-│ app                                            Esc │
-│ ────────────────────────────────────────────────── │
-│ ▾󰒍 work                                   current  │
-│   ▾󰓩 code                                  2 panes │
-│     ● 󰈙 nvim src/main.rs                     nvim  │
-│     >_ zsh                                   shell │
-│   ▸󰓩 tests                                 1 pane  │
-│ ▸󰒍 infra                                             │
-│  󰒓 old-session                resurrectable 2d ago  │
-│                                                     │
-│ ── selected ─────────────────────────────────────── │
-│ status   running                                    │
-│ cwd      ~/Work/GitSource/ConfigFiles               │
-│ command  cargo test --all                           │
-│ pane     work / code / 3                            │
-│                                                     │
-│ ↑↓ move  ←→ fold  Enter jump  Esc close             │
-╰─────────────────────────────────────────────────────╯
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 ```
 
-The final glyphs should be centralized so plain-text and Nerd Font modes remain
-possible.
+Example:
 
-The detail block is a selected-node preview, not a permanent layout panel.
-When the popup is wide enough it can move to the right side; narrow terminals
-keep it below the tree.
+```text
+◓ ❉ fix search rendering  crates/pane-hud-core  work/code  codex --full-auto  #3
+○ >_ zsh  .  work/shell  zsh  #7
+✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
+```
 
-## Visible levels
+Progress comes first so running state is the easiest attribute to scan.
 
-All three levels are configurable:
+## Template language
 
-- `show_sessions=true`: roots are sessions.
-- `show_sessions=false`: roots are tabs from the current/all live sessions.
-- `show_tabs=true`: panes are nested under tabs.
-- `show_tabs=false`: panes are direct children of their session.
-- `show_panes=false`: only session/tab navigation is available.
+The template is parsed once at plugin load into literal and field parts.
 
-The default is all three levels enabled.
+| Placeholder | Value |
+|---|---|
+| `{progress}` | Running spinner, idle, exited, or unknown progress |
+| `{icon}` | Pane or command category icon |
+| `{title}` | Pane title, or `pane <id>` when empty |
+| `{dir}` | CWD relative to the focused pane CWD |
+| `{session}` | Live session name |
+| `{tab}` | Tab name |
+| `{command}` | Full cached foreground command or initial fallback |
+| `{pane_id}` | Numeric terminal pane ID |
 
-When session names collide across current and dead sessions, the UI must keep
-their types distinct.
+Rules:
 
-## Search behavior
+- literals and spacing are preserved;
+- `{{` and `}}` emit literal braces;
+- unknown placeholders remain literal;
+- unterminated placeholders remain literal;
+- empty or invalid formats fall back to the default template;
+- search fields are derived from text placeholders in first-occurrence order;
+- `{progress}` and `{icon}` are visual fields and are not searchable.
 
-Search is case-insensitive fuzzy matching across:
+Search corpus examples:
 
-- session name;
-- tab name;
-- pane title;
-- current working directory;
-- current command;
-- pane ID.
+```text
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+                                         -> title, dir, session, tab, command, pane_id
+{icon} {session}/{tab} {title}         -> session, tab, title
+{progress} {title} {command}           -> title, command
+```
 
-Tree filtering rules:
+## Relative directories
 
-- Matching a pane preserves its ancestors.
-- Matching a tab shows the tab and its matching/descendant panes.
-- Matching a session shows its tree.
-- Empty query shows the configured normal tree.
-- Results score panes above tabs, and tabs above sessions when scores tie.
-- The currently focused pane is selected on initial open when available.
+The base directory is the focused current-session pane CWD.
 
-The search field must support:
+```text
+path == base             .
+path is under base       relative path
+path outside base        absolute path
+missing path             ?
+```
 
-- printable ASCII and UTF-8 input;
-- Backspace;
-- `Ctrl+w` word deletion;
-- `Ctrl+u` clear query;
-- Up/Down and `Ctrl+p`/`Ctrl+n` navigation;
-- Left/Right to collapse/expand branches;
-- Enter to jump;
-- Esc to close.
+Comparison uses path components through `Path::strip_prefix`, so
+`/work/app` is not treated as the parent of `/work/application`.
 
-## State icons
+## Search and highlighting
 
-Default Nerd Font set:
+Fuzzy mode uses a bounded subsequence scan. Substring mode uses direct
+containment. Both return a score and UTF-8 character positions:
 
-| State | Suggested glyph | Meaning |
-|---|---|---|
-| focused | `●` | Current focused terminal pane |
-| shell | `>_` | Shell is foreground |
-| command | `●` or spinner | Non-shell command is running |
-| codex | `❉` | Running command starts with `codex` |
-| claude | `✳` | Running command starts with `claude` |
-| editor | `󰈙` | nvim/vim/helix detected |
-| floating | `󰹙` | Floating pane |
-| fullscreen | `󰊓` | Fullscreen pane |
-| stacked | `󰐕` | Suppressed/stacked pane |
-| exited | `󰅖` | Exited pane |
-| unknown | `?` | Status unavailable |
-
-The icon state is derived in this order:
-
-1. plugin/terminal type;
-2. exited;
-3. focused;
-4. running command category;
-5. floating/fullscreen/suppressed modifiers;
-6. placeholder.
-
-Running commands should be updated from `CommandChanged`; the plugin should not
-spawn a process poller.
-
-## Selected pane details
-
-The details area shows full, unclipped information for the selected terminal
-pane:
-
-- progress state: running, idle shell, exited or unknown;
-- current working directory;
-- full foreground command and arguments;
-- session, tab and pane identity;
-- floating/fullscreen/stacked modifiers when relevant.
-
-The short pane row keeps only compact information so long commands do not
-destroy the tree alignment. The detail panel provides the complete values.
-
-Layout behavior:
-
-- `details=auto`: right preview at wide widths, bottom block at narrow widths;
-- `details=bottom`: always draw below the visible tree;
-- `details=right`: always reserve a side preview;
-- `details=off`: hide the panel.
-
-Current-session CWD uses `CwdChanged` and `get_pane_cwd()`. Current-session
-commands use `CommandChanged` and `get_pane_running_command()`. Other live
-sessions may show `unknown` for these values because 0.45.1 does not guarantee
-live process details for their panes.
-
-Switching to another session with `switch_session_with_focus` is still
-available even when its CWD or command is unknown.
-
-## Navigation semantics
-
-Enter behavior by node:
-
-- Session: switch to that session.
-- Tab: switch to the tab in its session.
-- Pane: switch to its session/tab and focus the terminal pane.
-- Resurrectable session: attach/restore it. No pane target is available yet.
-
-The current session uses `focus_terminal_pane`. Any other live session uses
-`switch_session_with_focus`.
-
-Suppressed panes should be included by default and unsuppressed on navigation.
-Plugin panes are excluded from selectable targets.
-
-## Configuration
-
-Proposed KDL:
-
-```kdl
-plugins {
-    tree-hud location="file:/stable/path/zellij-tree-hud.wasm" {
-        scope "all"                    // current | all
-        show_sessions "true"
-        show_tabs "true"
-        show_panes "true"
-        include_resurrectable "true"
-        show_commands "true"
-        show_cwd "true"
-        details "auto"                 // auto | bottom | right | off
-        detail_status "true"
-        detail_cwd "true"
-        detail_command "true"
-        show_pane_ids "false"
-        follow_current_session "true"
-        sort "session-tab-pane"
-        icons "nerd"                   // nerd | plain
-        density "compact"              // compact | comfortable
-        width "72%"
-        height "68%"
-        search_mode "fuzzy"            // fuzzy | substring
-        spinner_fps "4"
-    }
+```rust
+struct MatchResult {
+    score: MatchScore,
+    positions: Vec<usize>,
 }
 ```
 
-Unknown keys are ignored. Unknown enum values fall back to defaults and should
-not crash the plugin.
+All visible fields are scored independently. For fuzzy mode, the searchable
+fields are also joined in template order and matched as one logical row. This
+allows a query such as `10` to match when `1` appears in the title and `0`
+appears in the command. Combined positions are mapped back to their original
+fields, so every matched segment is highlighted.
 
-## Shortcut strategy
+A row is included when either a single field or the combined row matches. Its
+score is the best field/combined score, and positions for every matching field
+are retained.
 
-The target shortcut is `Ctrl+Space`, then `Space`, with a configurable timeout.
+Rows sort by score descending, then by stable traversal order:
 
-Two components are required:
+```text
+current session first
+tab position
+pane ID
+```
 
-1. A small background launcher that recognizes the sequence.
-2. The floating finder plugin that owns search and navigation.
+Matched characters are bold yellow. Only matched characters change foreground
+style.
 
-Recommended development order:
+## Icons, colors, and selection
 
-1. Build the finder with direct `Ctrl+Space` launch.
-2. Add a double-`Ctrl+Space` launcher as a stable alternative.
-3. Spike the exact `Ctrl+Space` → `Space` mode and keep it behind a config flag.
+`{progress}` and `{icon}` are independent fields.
 
-The exact sequence must not consume normal spaces outside its short pending
-window.
+Progress:
+
+| State | Glyph | Color |
+|---|---|---|
+| Running | four-frame spinner | cyan |
+| Idle shell | `○` | gray |
+| Exited | `✖` | red |
+| Unknown | `?` | dark gray |
+
+Command category:
+
+| Category | Color |
+|---|---|
+| focused | green |
+| shell | green |
+| command | cyan |
+| Codex | magenta |
+| Claude | orange |
+| editor | blue |
+| floating/fullscreen/stacked | blue |
+| unknown | dark gray |
+
+The selected row uses the active Zellij `text_selected` background across its
+complete terminal width. Icon foregrounds and bold-yellow match highlights
+remain visible on that background.
+
+Directory text is blue. Other text fields use the normal foreground.
+
+The palette is not hard-coded after startup. The plugin subscribes to
+`ModeUpdate` and maps semantic roles to the active Zellij style:
+
+- normal text: `text_unselected.base`;
+- green/cyan/magenta/orange: the corresponding Zellij emphasis colors;
+- blue/yellow: the theme's multiplayer blue and yellow slots;
+- errors: `exit_code_error.base`;
+- selected foreground/background: `text_selected`;
+- frame: `frame_selected.base`.
+
+Missing optional theme colors fall back to the normal text color so idle
+markers cannot become black and disappear on a dark background.
+
+## Rendering
+
+The frame is:
+
+```text
+FIND/search line
+divider
+visible pane rows
+footer
+```
+
+The outer floating-pane frame/title belongs to Zellij. The plugin renders only
+the content area so a native pane frame does not produce a double border.
+
+Rendering evaluates cached template parts into styled spans:
+
+```rust
+struct StyledSpan {
+    text: String,
+    foreground: ForegroundColor,
+    selected_background: bool,
+    bold: bool,
+}
+```
+
+Width rules:
+
+- visible calculation uses `unicode-width`;
+- ANSI escape bytes never participate in width calculation;
+- assembled rows are truncated with an ellipsis when necessary;
+- every row is padded to the exact inner width;
+- the search line keeps a width-safe query tail and cursor position.
+
+The selected viewport starts at `selected + 1 - visible_rows` rather than
+walking all prior rows. A 10,000-row regression verifies bounded rendering.
 
 ## Architecture
 
-Proposed modules:
-
 ```text
-src/
-  main.rs        plugin registration and event loop
-  config.rs      plugin configuration parsing
-  model.rs       Session/Tab/Pane tree and stable IDs
-  events.rs      Zellij event/action adapter
-  search.rs      fuzzy matching and tree pruning
-  selection.rs   expansion and keyboard selection state
-  render.rs      rows, icons, colors and viewport
-  launcher.rs    optional two-step sequence detector
+crates/pane-hud-core/
+  app.rs       Finder state, selection, query, rebuild thresholds
+  rows.rs      flat pane rows, relative dirs, field-scoped search
+  input.rs     UTF-8 query editing and stable selection
+  icons.rs     category classification and progress state
+  model.rs     Zellij-independent world and value caches
+  search.rs    scoring and UTF-8 match positions
+  style.rs     width-safe styled spans and ANSI conversion
+  template.rs  row template parser and field metadata
+  render.rs    flat viewport renderer
+
+crates/pane-hud-plugin/
+  adapter.rs   Zellij event/key/action translation
+  plugin.rs    plugin lifecycle, event subscriptions, navigation
 ```
 
-Core state:
-
-```rust
-struct State {
-    sessions: Vec<SessionNode>,
-    running_commands: HashMap<u32, Vec<String>>,
-    pane_cwds: HashMap<u32, PathBuf>,
-    focused_pane: Option<u32>,
-    query: String,
-    visible_rows: Vec<Row>,
-    selected: usize,
-    expanded: HashSet<NodeKey>,
-}
-```
-
-The model must be rebuilt safely when `TabUpdate`, `PaneUpdate` and
-`SessionUpdate` arrive in different orders. Node identity should not depend on
-display position.
+The core has no Zellij host calls and remains host-testable.
 
 ## Data flow
 
 ```text
-Zellij events
-  ├─ SessionUpdate -> session/tab/pane snapshot
-  ├─ TabUpdate     -> current-session tab metadata
-  ├─ PaneUpdate    -> current-session pane metadata
-  ├─ CommandChanged -> running-command cache
-  └─ CwdChanged     -> pane CWD cache
-            │
-            ▼
-        tree model
-            │
-      fuzzy filter
-            │
-            ▼
-     visible row model
-            │
-            ▼
-      rendered HUD pane
+Zellij SessionUpdate / TabUpdate / PaneUpdate
+  -> core World
+
+CommandChanged / CwdChanged / bounded initial queries
+  -> PaneValueCache
+
+World + Config + Query + PaneValueCache
+  -> flat Rows with scores and match positions
+
+Rows + visible viewport
+  -> styled spans
+  -> ANSI frame
 ```
 
-Navigation flows through one adapter so current-session focus and
-cross-session focus use the same target abstraction.
+## Performance
 
-## Permissions
+- Parse `row_format` once, not once per row or render.
+- Rebuild rows only when a dependency changes.
+- Command updates invalidate rows only for `{command}`, `{progress}`, or
+  `{icon}`; CWD updates invalidate only for `{dir}`.
+- Search each visible text field once and retain all match positions.
+- Render only the visible row slice.
+- Reuse rows for selection and spinner animation.
+- Do not poll command/CWD values.
+- Bound failed command/CWD queries.
+- Schedule spinner timers only while a visible current-session pane is running.
 
-Minimum expected permissions:
+The target working set is tens to a few hundred panes. Existing regressions
+cover 2,000-pane updates and a 10,000-row viewport.
 
-- `ReadApplicationState`
-- `ChangeApplicationState`
+## Navigation
 
-If the optional launcher dynamically rewrites keybindings:
+- Current-session pane: `focus_terminal_pane`.
+- Other live-session pane: `switch_session_with_focus` with the terminal pane
+  target.
+- Plugin and non-selectable panes are excluded.
+- Suppressed panes remain selectable and can be restored during focus.
 
-- `Reconfigure`
-- `InterceptInput` only if the safer double-chord launcher proves insufficient.
+Command and CWD values for other sessions may be unavailable in Zellij 0.45.1;
+their rows still support structural search and pane navigation.
 
-No command execution permission is needed for live status because Zellij
-provides the running command API directly.
+## Configuration
 
-## Refresh and performance
+```kdl
+scope "all"                    // current | all
+row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+icons "nerd"                   // nerd | plain
+search_mode "fuzzy"            // fuzzy | substring
+spinner_fps "4"
+follow_current_session "true"
+```
 
-- Update state only on relevant Zellij events.
-- Query missing command state once when the finder opens.
-- Query missing CWD state once when the finder opens.
-- Spinner animation runs only while the finder is visible and only when at
-  least one visible pane is running.
-- Recompute the fuzzy result only when the query or underlying tree changes.
-- Large sessions should remain responsive with several hundred panes.
+Legacy tree/detail keys are accepted but ignored. Unknown keys are ignored.
 
-## Testing strategy
+## Shortcut strategy
 
-Unit tests:
+Zellij 0.45.1 does not expose plugin-defined global keybindings. The supported
+release path is ordinary Zellij KDL with a direct shortcut:
 
-- tree construction across current and other sessions;
-- hidden level combinations;
-- stable selection after refresh;
-- fuzzy filtering preserves ancestors;
-- icons for shell, editor, Codex, Claude, floating, exited and unknown;
-- progress state, command and CWD detail rendering;
-- detail-panel placement at narrow and wide widths;
-- navigation target selection across sessions;
-- configuration parsing and invalid values.
+```text
+Ctrl+Shift+e
+```
 
-Integration tests with real Zellij:
+The configurable fallback path remains `Ctrl+o`, then `g`. `Ctrl+Space` and
+`Ctrl+g` conflicted with the local environment and are not registered.
 
-- open/close floating pane;
-- search and Enter navigation;
-- switch to another live session and focus a pane;
-- select a resurrectable session;
-- verify `CommandChanged` icon updates;
-- verify `CwdChanged` detail updates;
-- verify the optional launcher sequence and timeout.
+## Error handling
 
-Visual fixtures:
+- Missing title: `pane <id>`.
+- Missing command, directory, tab name, or unavailable status: `?` where that
+  field is textual.
+- Invalid/empty template: default template.
+- Unknown template tokens: literal text.
+- Query/navigation errors never panic the plugin.
+- Narrow terminals truncate safely rather than emitting malformed widths.
 
-- narrow and wide terminals;
-- Nerd Font and plain mode;
-- many sessions;
-- long names and Unicode titles.
+## Testing
 
-## Milestones
+Automated coverage includes:
 
-1. Research and design review.
-2. Minimal finder with current-session tab/pane tree.
-3. Cross-session tree and one-step focus.
-4. Live command icons and HUD styling.
-5. Configuration surface.
-6. Shortcut launcher spike.
-7. Integration verification and packaging.
-
-## Open decisions
-
-- Exact two-step shortcut reliability target.
-- Whether the initial release includes both double-chord and literal sequenced
-  launchers.
-- Whether full nested split geometry is worth a later implementation.
-- How to present unknown command state for non-current sessions without visual
-  noise.
-- How to present unknown CWD for non-current sessions without duplicating the
-  command placeholder.
+- template parsing, escaping, fallback, and search-field derivation;
+- flat pane-only row generation;
+- relative path edge cases;
+- UTF-8 fuzzy/substring positions;
+- template-scoped matching;
+- progress/category color semantics;
+- match and selected-row styling layers;
+- Unicode width safety;
+- viewport bounds at 10,000 rows;
+- stable selection and cached-row reuse;
+- duplicate event suppression and bounded query retries;
+- idle-spinner behavior;
+- left/right no-op behavior;
+- KDL validation, WASM build, snapshot output, and a real Zellij smoke test.

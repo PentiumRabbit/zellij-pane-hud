@@ -1,336 +1,273 @@
 # Technical research
 
-Research date: 2026-11-14
+Research date: 2026-11-15
 
 Target runtime:
 
 - Zellij `0.45.1`
-- macOS `x86_64`
 - Rust `1.93.0`
-- Planned WASM target: `wasm32-wasip1`
+- `wasm32-wasip1`
 
 ## Executive summary
 
-The requested feature is feasible:
+The flat pane picker is feasible with the Zellij 0.45.1 plugin APIs:
 
-- Zellij exposes sessions, tabs and panes through plugin events.
-- A plugin can query the foreground command of a terminal pane.
-- A plugin can query the current working directory of a terminal pane.
-- A plugin can switch to another session and focus a pane in one API call.
-- A floating plugin pane can implement the HUD-style search UI.
-- A flat fuzzy search and a two-level tab→pane tree are straightforward.
+- `SessionUpdate`, `TabUpdate`, and `PaneUpdate` provide live structural data.
+- `CommandChanged` and `get_pane_running_command` provide foreground commands
+  for the current session.
+- `CwdChanged` and `get_pane_cwd` provide current-session working directories.
+- `focus_terminal_pane` focuses current-session panes.
+- `switch_session_with_focus` can focus a pane in another live session.
+- A floating plugin pane can render a width-bounded ANSI UI.
+- `ModeUpdate(ModeInfo)` exposes the active Zellij style and semantic palette.
 
 The main constraints are:
 
-- Zellij does not expose a user-defined input mode, so a literal
-  `Ctrl+Space` → `Space` sequence requires a launcher with dynamic key
-  registration or interception.
-- Other live sessions provide structural pane data, but 0.45.1 does not expose
-  a reliable live foreground-command feed for every pane in another session.
-- Resurrectable sessions have names but no live tab/pane tree until restored.
-- The plugin API exposes tabs and panes, not a complete nested split topology.
+- Zellij does not expose plugin-defined global keybindings.
+- Live command/CWD state is not guaranteed for every pane in another session.
+- Resurrectable sessions have no live tab/pane tree until attached.
+- Zellij does not expose complete nested split geometry through this plugin
+  surface.
 
-## Version-specific APIs
+## Flat pane model
 
-### Session and tree discovery
-
-Relevant events:
-
-- `TabUpdate(Vec<TabInfo>)`
-- `PaneUpdate(PaneManifest)`
-- `SessionUpdate(Vec<SessionInfo>, Vec<(String, Duration)>)`
-
-`SessionInfo` includes tabs, pane manifests, connected-client counts and a
-current-session marker. The event is sufficient to render:
+Each row is built from:
 
 ```text
-session
-  tab
-    pane
+session name
+tab name + tab position + tab ID
+pane title + terminal pane ID
+cached CWD
+cached command
+progress state
+search score + match positions
 ```
 
-Resurrectable sessions are returned as `(name, age)`, so they can only be shown
-as leaf nodes.
+Stable identity is the composite key:
 
-Versioned source:
+```text
+session name / stable tab ID / terminal pane ID
+```
 
-- [`event.proto`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-utils/src/plugin_api/event.proto)
-- [`zellij-tile` event docs](https://zellij.dev/documentation/plugin-api-events.html)
+Display order never identifies a pane.
 
-### Pane metadata
+Normal traversal order is current session first, then tab position, then pane
+ID. Query results sort by best field score and retain traversal order for ties.
 
-`PaneInfo` in 0.45.1 includes:
+## Template parsing
 
-- stable pane ID;
-- plugin vs terminal pane;
-- focus, fullscreen, floating and suppressed state;
-- title and initial terminal command;
-- exited state and exit status;
-- pane geometry;
-- selectability.
+`row_format` is parsed once at load. Parsing has three responsibilities:
 
-This is enough for row labels, indentation and state icons.
+1. preserve literal text and escaped braces;
+2. map known placeholders to typed fields;
+3. derive the deduplicated searchable field list.
 
-### Current running command
+Generated fields:
 
-Two APIs are available:
+- `{progress}`;
+- `{icon}`.
 
-- Subscribe to `CommandChanged(PaneId, Vec<String>, bool, Vec<ClientId>)`.
-- Call `get_pane_running_command(PaneId)`.
+Searchable text fields:
 
-Both require `ReadApplicationState`. `CommandChanged` reports a new foreground
-command when a shell launches a program or returns to the prompt. This supports
-live icons such as:
+- `{title}`;
+- `{dir}`;
+- `{session}`;
+- `{tab}`;
+- `{command}`;
+- `{pane_id}`.
 
-- shell at prompt;
-- command running;
-- Codex/Claude/editor detected from the executable name.
+This avoids maintaining separate search options that can drift from the visible
+row layout.
 
-The best implementation is event-driven:
+## Relative CWD
 
-1. Initialize commands when the popup opens.
-2. Update the cache from `CommandChanged`.
-3. Avoid polling on every render.
+The base is the focused current-session pane's CWD. `Path::strip_prefix` gives
+component-aware relative paths:
 
-`get_pane_running_command()` and live `CommandChanged` data are reliable for
-the current session. For other sessions, structural data is available from
-`SessionInfo`; live command state should be treated as best-effort or unknown.
+```text
+/work/app/src under /work/app -> src
+/work/app == /work/app         -> .
+/work/application              -> absolute fallback
+missing                        -> ?
+```
 
-Versioned source:
+String prefix checks are incorrect because `/work/app` is a string prefix of
+`/work/application`.
 
-- [`shim.rs`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-tile/src/shim.rs)
-- `CommandChanged` in
-  [`event.proto`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-utils/src/plugin_api/event.proto)
+## Matching and highlighting
 
-### Current working directory
-
-Two APIs are available:
-
-- Subscribe to `CwdChanged(PaneId, PathBuf, Vec<ClientId>)`.
-- Call `get_pane_cwd(PaneId)`.
-
-`get_pane_cwd()` requires `ReadApplicationState`. The helper queries the
-operating system for the current process CWD, not just the pane's starting
-directory. Errors include exited processes, inaccessible directories and
-deleted directories.
-
-The practical flow is:
-
-1. Query CWD when the finder opens.
-2. Update the cache from `CwdChanged`.
-3. Fall back to a configured placeholder when the pane has exited or cannot be
-   queried.
-
-Current-session CWD data is reliable. `SessionInfo` in 0.45.1 does not provide
-a guaranteed live CWD for panes in other sessions, so those values should be
-shown as unknown unless a future API changes this.
-
-Versioned source:
-
-- `get_pane_cwd()` in
-  [`shim.rs`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-tile/src/shim.rs)
-- `CwdChanged` in
-  [`event.proto`](https://github.com/zellij-org/zellij/blob/v0.45.1/zellij-utils/src/plugin_api/event.proto)
-
-### Direct navigation
-
-Pane focus in the current session:
+The matcher returns:
 
 ```rust
-focus_terminal_pane(pane_id, should_float_if_hidden, should_be_in_place_if_hidden);
+struct MatchResult {
+    score: MatchScore,
+    positions: Vec<usize>,
+}
 ```
 
-Cross-session focus:
+`positions` are UTF-8 character indices, not byte offsets. This lets the
+renderer split `&str` safely and highlight only matched characters.
+
+Scoring behavior:
+
+- fuzzy mode scans a query as an ordered subsequence;
+- substring mode uses direct containment;
+- contiguous runs, word-boundary matches, and shorter spans receive bonuses;
+- leading gaps and skipped characters receive penalties;
+- each visible text field is scored independently;
+- the row keeps the best score and positions for every matching field.
+
+No second highlighting search pass is performed.
+
+## Command and CWD data
+
+`CommandChanged(PaneId, Vec<String>, bool, Vec<ClientId>)` reports a foreground
+command and whether it is currently in the foreground. The boolean is important
+for nested shells:
+
+- `true`: running, even when the executable is `zsh` or `bash`;
+- `false`: idle shell;
+- exited pane: exited takes precedence;
+- missing command: unknown.
+
+`CwdChanged(PaneId, PathBuf, Vec<ClientId>)` updates the CWD without polling.
+
+The plugin performs bounded initial queries after permission/state events:
+
+- command queries only when `{command}`, `{progress}`, or `{icon}` is active;
+- CWD queries only when `{dir}` is active;
+- at most two failed attempts per pane and field per plugin lifetime.
+
+Current-session values are reliable. Other-session rows remain navigable even
+when these values are unavailable.
+
+## Navigation APIs
+
+Current session:
+
+```rust
+focus_terminal_pane(pane_id, true, false);
+```
+
+Another live session:
 
 ```rust
 switch_session_with_focus(
     session_name,
-    tab_position,
+    Some(tab_position),
     Some((pane_id, false)),
 );
 ```
 
-The pane is prioritized over the tab position. This makes a one-step jump to
-another session's pane feasible.
+Both require the plugin's `ChangeApplicationState` permission.
 
-Required permission: `ChangeApplicationState`.
-
-Versioned documentation:
-
-- [Plugin API commands](https://zellij.dev/documentation/plugin-api-commands.html)
-
-### Search
-
-No Zellij API is needed. The plugin can use a pure-Rust matcher such as
-`fuzzy-matcher`, already used by `zellij-pane-picker`.
-
-Search corpus:
-
-- session name;
-- tab name and position;
-- pane title;
-- current working directory;
-- current command;
-- pane ID.
-
-Matching a pane keeps its session and tab ancestors visible. Matching a tab
-can keep all its panes visible. This is ordinary tree-filter behavior and has
-no external dependency.
-
-### Popup rendering
-
-The plugin can be launched with:
-
-```kdl
-LaunchOrFocusPlugin "tree-hud" {
-    floating true
-    move_to_focused_tab true
-}
-```
-
-Zellij's `zellij-tile` exposes text/table/nested-list primitives and direct
-coordinate rendering. The popup can therefore use the same compact visual
-treatment as `zellij-hud`.
-
-The exact mechanism for setting width, height and centered placement still
-needs a small implementation spike. It may require plugin-side resize or a
-launcher role rather than plain `LaunchOrFocusPlugin` options.
+Plugin panes and non-selectable UI panes are filtered in the adapter.
+Suppressed terminal panes remain selectable.
 
 ## Shortcut research
 
-### Requested sequence
+The requested launch sequence involved `Ctrl+Space`. Zellij 0.45.1 keybinding
+limitations:
 
-Desired input:
+- listed bindings are independent, not timed sequences;
+- custom input modes are rejected as `Unknown InputMode`;
+- plugin-defined global shortcut registration is unavailable;
+- dynamic global bindings or interception would add a background launcher and
+  complex replay/timeout behavior.
 
-```text
-Ctrl+Space
-Space
-```
+The local environment already uses `Ctrl+Space` and `Ctrl+g`, so neither can be
+claimed safely.
 
-Zellij keybindings support multiple keys in one `bind`, but each listed key is
-an independent binding. They do not define a timed sequence.
-
-The first attempted design was a custom mode:
+Implemented release path:
 
 ```kdl
 keybinds {
-    normal {
-        bind "Ctrl Space" { SwitchToMode "tree-hud-leader"; }
-    }
-    tree-hud-leader {
-        bind "Space" { LaunchOrFocusPlugin "tree-hud"; }
+    session {
+        bind "g" {
+            LaunchOrFocusPlugin "pane-hud" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "Normal"
+        }
     }
 }
 ```
 
-This fails validation on Zellij 0.45.1:
+This reuses Zellij's native session leader:
 
 ```text
-Unknown InputMode 'tree-hud-leader'
+Ctrl+o, then g
 ```
 
-The reproducible fixture is
-[`ctrl-space-custom-mode.failed.kdl`](../prototypes/ctrl-space-custom-mode.failed.kdl).
+The final key stays visible and configurable in ordinary Zellij KDL. No
+background launcher, key interception, or normal-space hijacking is required.
 
-### Feasible strategies
+## Rendering research
 
-#### A. Single `Ctrl+Space`
+ANSI escape bytes cannot be used for terminal width calculations. The renderer
+therefore:
 
-Directly opens the finder. This is the simplest, most reliable option and needs
-no background launcher.
+1. evaluates template fields into styled spans;
+2. splits matched text into bold-yellow and normal spans;
+3. truncates by Unicode display width;
+4. pads to the exact row width;
+5. applies selected-background state to every visible span, including padding;
+6. converts spans to ANSI last.
 
-#### B. Double `Ctrl+Space`
+This keeps:
 
-A tiny background launcher receives each `Ctrl+Space` through a global
-keybinding, starts a short timer on the first press, and opens the finder if a
-second press arrives before expiry. This avoids intercepting normal text keys.
+- CJK and other wide characters width-safe;
+- icon/match colors visible on selected rows;
+- the selected background full-width;
+- footer/search/border lines aligned.
 
-#### C. Exact `Ctrl+Space`, then `Space`
+Zellij's `Text` and `Table` components expose theme-relative emphasis levels,
+but only a small fixed set of semantic foregrounds. The HUD needs independent
+progress, command-category, directory, match, and selection colors. It
+therefore uses `ModeInfo.style.colors` to build a semantic ANSI palette while
+retaining Zellij as the source of truth for the active theme.
 
-A background launcher can dynamically register a temporary global `Space`
-binding after the first chord, or use global key interception for a short
-window. Both approaches have tradeoffs:
+## Performance findings
 
-- dynamic `reconfigure` adds latency and may briefly steal a normal space;
-- global interception consumes all keys and would need safe replay for
-  non-matching keys;
-- a timeout is mandatory to recover from an incomplete sequence.
+Expected usage is tens to a few hundred panes. The implementation keeps work
+proportional to changed data and visible output:
 
-This remains feasible but should be an optional advanced launcher, not the
-core plugin architecture.
+- template parsed once;
+- searchable fields derived once with the template;
+- cached rows reused by render, selection, and spinner ticks;
+- only visible rows styled and converted to ANSI;
+- selected viewport computed by arithmetic rather than scanning the prefix;
+- command/CWD updates invalidate only when the template depends on them;
+- no process polling;
+- timer stops when no visible pane is running.
 
-Recommendation: make the launcher configurable and start with single
-`Ctrl+Space`; implement double `Ctrl+Space` or the literal two-step sequence
-after a focused spike.
+Regressions exercise:
 
-## Existing plugins
+- 2,000-pane Finder updates;
+- 10,000-row selected viewport rendering;
+- repeated render/selection without row rebuilds;
+- duplicate structural events without render requests;
+- idle shell without spinner timers;
+- bounded failed queries.
 
-### `zellij-pane-picker`
+## Versioned source references
 
-- Flat pane list with fuzzy filtering and favorites.
-- Directly focuses selected panes.
-- Good reference for pane search and global shortcut registration.
-- Does not provide a session→tab→pane tree.
+- `SessionUpdate`, `TabUpdate`, `PaneUpdate`, `CommandChanged`, `CwdChanged`:
+  Zellij `zellij-utils/src/data.rs` and
+  `zellij-utils/src/plugin_api/event.proto` at `v0.45.1`.
+- Plugin queries and navigation commands:
+  Zellij `zellij-tile/src/shim.rs` at `v0.45.1`.
+- Host event conversion:
+  `zellij-utils/src/plugin_api/event.rs` at `v0.45.1`.
+- Snapshot acceptance:
+  `zellij-plugin-snapshot 0.2.3` with `zellij-tile 0.45.1`.
 
-### `zellij-tree-tabs`
+## Remaining limitations
 
-- Persistent vertical tree sidebar.
-- Shows tabs and pane lists with status-aware UI.
-- Good reference for tree rendering and state.
-- It is not a temporary HUD-style popup and does not center on fuzzy search.
-
-### `zellij-leap`
-
-- Search-and-jump interaction inspired by Leap.
-- Supports tabs, panes and sessions.
-- Good reference for target matching and Enter-to-jump.
-- It does not show a persistent tree hierarchy or status icons.
-
-## Configuration model
-
-Proposed plugin configuration:
-
-```kdl
-plugins {
-    tree-hud location="file:/stable/path/zellij-tree-hud.wasm" {
-        scope "all"
-        show_sessions "true"
-        show_tabs "true"
-        show_panes "true"
-        include_resurrectable "true"
-        show_commands "true"
-        show_cwd "true"
-        details "auto"
-        detail_status "true"
-        detail_cwd "true"
-        detail_command "true"
-        icons "nerd"
-        icon_style "hud"
-        width "72%"
-        height "68%"
-        follow_current_session "true"
-    }
-}
-```
-
-`show_sessions`, `show_tabs` and `show_panes` control visible levels. Flattening
-must remain deterministic when a level is hidden.
-
-`details` controls the selected-pane details panel:
-
-- `auto`: right side when wide enough, otherwise bottom;
-- `bottom`: fixed detail block under the tree;
-- `right`: side preview;
-- `off`: no detail panel.
-
-## Explicit limitations
-
-- The tree is `session → tab → pane`, not the full nested split geometry.
-- Resurrectable sessions cannot expose tabs/panes until they are attached.
-- Live running-command icons are guaranteed only for the current session in
-  0.45.1.
-- Live CWD details are guaranteed only for the current session in 0.45.1.
-- The exact two-key sequence needs a launcher separate from the popup plugin.
-- The WASM target is not currently installed on this machine.
-- The configured Cargo registry is a non-standard USTC sparse source; the build
-  phase must decide whether to use it or explicitly use crates.io.
+- No plugin-defined global shortcut.
+- No guaranteed live command/CWD details for other sessions.
+- No resurrectable session rows because they have no live pane target.
+- No nested split topology visualization.
+- Native floating-pane size only; width/height are not configurable through
+  `LaunchOrFocusPlugin` in 0.45.1.

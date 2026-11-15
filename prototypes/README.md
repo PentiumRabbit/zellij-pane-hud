@@ -12,7 +12,7 @@ Ctrl+Space -> Space
 It is expected to fail validation:
 
 ```text
-Unknown InputMode 'tree-hud-leader'
+Unknown InputMode 'pane-hud-leader'
 ```
 
 The failure is intentional research evidence. Do not use this file as a
