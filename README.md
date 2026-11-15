@@ -1,6 +1,6 @@
 # zellij-pane-switcher
 
-[![CI](https://github.com/PentiumRabbit/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PentiumRabbit/zellij-pane-switcher/actions/workflows/ci.yml)
+[![CI](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml)
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, title, relative directory,
@@ -141,7 +141,7 @@ keeps `Ctrl+o`, then `g` as a fallback.
 
 ```kdl
 plugins {
-    pane-switcher location="https://github.com/PentiumRabbit/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
+    pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"

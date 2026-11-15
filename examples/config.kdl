@@ -1,6 +1,6 @@
 // Published automatically by the v* tag workflow.
 plugins {
-    pane-switcher location="https://github.com/PentiumRabbit/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
+    pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
