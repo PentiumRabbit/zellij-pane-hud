@@ -37,6 +37,8 @@ jobs:
           rustup toolchain install "$RUST_VERSION" \
             --profile minimal \
             --target wasm32-wasip1 \
+            --component rustfmt \
+            --component clippy \
             --no-self-update
           rustup default "$RUST_VERSION"
           rustc --version
