@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use tree_hud_core::app::Finder;
-use tree_hud_core::config::Config;
-use tree_hud_core::render::{render_frame, RenderOptions};
-use tree_hud_core::style::ThemePalette;
-use tree_hud_core::template::TemplateField;
+use pane_hud_core::app::Finder;
+use pane_hud_core::config::Config;
+use pane_hud_core::render::{render_frame, RenderOptions};
+use pane_hud_core::style::ThemePalette;
+use pane_hud_core::template::TemplateField;
 use zellij_tile::prelude::*;
 
 use crate::adapter::{
@@ -16,7 +16,7 @@ use crate::adapter::{
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
 
 #[derive(Default)]
-pub struct TreeHudPlugin {
+pub struct PaneHudPlugin {
     finder: Finder,
     permissions_granted: bool,
     visible: bool,
@@ -32,7 +32,7 @@ struct PaneQueryFailures {
     cwd: u8,
 }
 
-impl ZellijPlugin for TreeHudPlugin {
+impl ZellijPlugin for PaneHudPlugin {
     fn load(&mut self, configuration: BTreeMap<String, String>) {
         let config = Config::from_map(&configuration);
         self.finder = Finder::new(config);
@@ -200,7 +200,7 @@ impl ZellijPlugin for TreeHudPlugin {
     }
 }
 
-impl TreeHudPlugin {
+impl PaneHudPlugin {
     fn should_report_cursor(&mut self, cursor: Option<(usize, usize)>) -> bool {
         if self.last_reported_cursor == Some(cursor) {
             return false;
@@ -368,19 +368,19 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
 
-    use tree_hud_core::app::Finder;
-    use tree_hud_core::config::Config;
-    use tree_hud_core::style::ColorSpec;
+    use pane_hud_core::app::Finder;
+    use pane_hud_core::config::Config;
+    use pane_hud_core::style::ColorSpec;
     use zellij_tile::prelude::{
         BareKey, Event, KeyWithModifier, ModeInfo, PaletteColor, PaneManifest, SessionInfo,
         ZellijPlugin,
     };
 
-    use super::TreeHudPlugin;
+    use super::PaneHudPlugin;
 
     #[test]
     fn cursor_is_reported_only_when_its_position_changes() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
 
         assert!(plugin.should_report_cursor(None));
         assert!(!plugin.should_report_cursor(None));
@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn duplicate_structural_events_do_not_request_another_render() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
         let session = SessionInfo {
             name: "work".into(),
             is_current_session: true,
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn failed_pane_queries_are_retried_until_both_values_are_cached() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
 
         assert!(!plugin.update_missing_pane_values(
             "work",
@@ -434,7 +434,7 @@ mod tests {
 
     #[test]
     fn persistently_failing_pane_queries_stop_retrying() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
         let mut command_queries = 0;
         let mut cwd_queries = 0;
 
@@ -463,9 +463,9 @@ mod tests {
             "row_format".into(),
             "{title}".into(),
         )]));
-        let mut plugin = TreeHudPlugin {
+        let mut plugin = PaneHudPlugin {
             finder: Finder::new(config),
-            ..TreeHudPlugin::default()
+            ..PaneHudPlugin::default()
         };
         let mut command_queries = 0;
         let mut cwd_queries = 0;
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn left_and_right_keys_do_not_request_render() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
 
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Left)));
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Right)));
@@ -497,7 +497,7 @@ mod tests {
 
     #[test]
     fn mode_update_applies_the_active_zellij_theme_palette() {
-        let mut plugin = TreeHudPlugin::default();
+        let mut plugin = PaneHudPlugin::default();
         let mut mode = ModeInfo::default();
         mode.style.colors.text_unselected.emphasis_2 = PaletteColor::Rgb((1, 2, 3));
 

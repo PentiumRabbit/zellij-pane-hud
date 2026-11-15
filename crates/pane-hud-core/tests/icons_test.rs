@@ -1,7 +1,7 @@
-use tree_hud_core::config::IconsMode;
-use tree_hud_core::icons::{classify_pane, icon_for, progress_state, PaneVisualState};
-use tree_hud_core::model::{LivePane, NodeKey};
-use tree_hud_core::rows::ProgressState;
+use pane_hud_core::config::IconsMode;
+use pane_hud_core::icons::{classify_pane, icon_for, progress_state, PaneVisualState};
+use pane_hud_core::model::{LivePane, NodeKey};
+use pane_hud_core::rows::ProgressState;
 
 fn pane() -> LivePane {
     LivePane {

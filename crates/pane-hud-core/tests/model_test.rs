@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use tree_hud_core::model::{NodeKey, PaneInput, PaneManifestInput, SessionInput, TabInput, World};
+use pane_hud_core::model::{NodeKey, PaneInput, PaneManifestInput, SessionInput, TabInput, World};
 
 fn session_without_panes() -> SessionInput {
     SessionInput {
@@ -63,7 +63,7 @@ fn resurrectable_sessions_keep_their_age_and_type() {
     let mut world = World::default();
     world.apply_snapshot(
         Vec::new(),
-        vec![tree_hud_core::model::DeadSessionInput {
+        vec![pane_hud_core::model::DeadSessionInput {
             name: "work".into(),
             age: Duration::from_secs(120),
         }],

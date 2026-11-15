@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use tree_hud_core::app::NavigationTarget;
-use tree_hud_core::model::NodeKey;
-use tree_hud_core::style::{ColorSpec, ThemePalette};
-use tree_hud_plugin::adapter::{
+use pane_hud_core::app::NavigationTarget;
+use pane_hud_core::model::NodeKey;
+use pane_hud_core::style::{ColorSpec, ThemePalette};
+use pane_hud_plugin::adapter::{
     key_intent, navigation_action, pane_manifest_input, session_input, tab_inputs, theme_palette,
     InputIntent, NavigationAction,
 };
@@ -87,9 +87,9 @@ fn adapter_excludes_plugin_and_unselectable_panes() {
     let input = pane_manifest_input(&manifest);
     assert_eq!(input.panes[&0].len(), 3);
 
-    let mut world = tree_hud_core::model::World::default();
+    let mut world = pane_hud_core::model::World::default();
     world.apply_snapshot(
-        vec![tree_hud_core::model::SessionInput {
+        vec![pane_hud_core::model::SessionInput {
             name: "work".into(),
             is_current: true,
             connected_clients: 1,
@@ -184,7 +184,7 @@ fn key_adapter_handles_ctrl_shortcuts_and_utf8_text() {
 }
 
 #[test]
-fn zellij_style_colors_map_to_tree_hud_semantic_palette() {
+fn zellij_style_colors_map_to_pane_hud_semantic_palette() {
     let mut style = Style::default();
     let colors = &mut style.colors;
     colors.text_unselected.base = PaletteColor::Rgb((192, 202, 245));

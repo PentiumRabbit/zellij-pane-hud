@@ -4,7 +4,7 @@ Status: implemented flat pane-template HUD.
 
 ## Product definition
 
-`zellij-tree-hud` is a temporary floating pane picker for Zellij. It combines:
+`zellij-pane-hud` is a temporary floating pane picker for Zellij. It combines:
 
 - the compact visual language of a HUD;
 - search-first pane selection;
@@ -38,7 +38,7 @@ Selection is restored by stable session/tab/pane identity across row rebuilds.
 Example:
 
 ```text
-◓ ❉ fix search rendering  crates/tree-hud-core  work/code  codex --full-auto  #3
+◓ ❉ fix search rendering  crates/pane-hud-core  work/code  codex --full-auto  #3
 ○ >_ zsh  .  work/shell  zsh  #7
 ✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```
@@ -210,7 +210,7 @@ walking all prior rows. A 10,000-row regression verifies bounded rendering.
 ## Architecture
 
 ```text
-crates/tree-hud-core/
+crates/pane-hud-core/
   app.rs       Finder state, selection, query, rebuild thresholds
   rows.rs      flat pane rows, relative dirs, field-scoped search
   input.rs     UTF-8 query editing and stable selection
@@ -221,7 +221,7 @@ crates/tree-hud-core/
   template.rs  row template parser and field metadata
   render.rs    flat viewport renderer
 
-crates/tree-hud-plugin/
+crates/pane-hud-plugin/
   adapter.rs   Zellij event/key/action translation
   plugin.rs    plugin lifecycle, event subscriptions, navigation
 ```
@@ -288,14 +288,14 @@ Legacy tree/detail keys are accepted but ignored. Unknown keys are ignored.
 ## Shortcut strategy
 
 Zellij 0.45.1 does not expose plugin-defined global keybindings. The supported
-release path is ordinary Zellij KDL using the built-in session leader:
+release path is ordinary Zellij KDL with a direct shortcut:
 
 ```text
-Ctrl+o, then g
+Ctrl+Shift+e
 ```
 
-The final `g` binding is user-configurable. `Ctrl+Space` and `Ctrl+g` conflicted
-with the local environment and are not registered.
+The configurable fallback path remains `Ctrl+o`, then `g`. `Ctrl+Space` and
+`Ctrl+g` conflicted with the local environment and are not registered.
 
 ## Error handling
 

@@ -1,5 +1,5 @@
 name: template
-plugin: ../../dist/tree-hud.wasm
+plugin: ../../dist/pane-hud.wasm
 config:
   icons: plain
   row_format: "{icon} {session}/{tab} {title}  {dir}  {command}"

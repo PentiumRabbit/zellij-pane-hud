@@ -1,4 +1,4 @@
-# zellij-tree-hud
+# zellij-pane-hud
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, title, relative directory,
@@ -111,7 +111,7 @@ rustup target add wasm32-wasip1
 ./scripts/build-wasm.sh
 ```
 
-The build script writes `dist/tree-hud.wasm`.
+The build script writes `dist/pane-hud.wasm`.
 
 Run the full verification suite:
 
@@ -129,12 +129,12 @@ zellij --config examples/config.kdl setup --check
 ## Zellij configuration
 
 Zellij plugins do not define their own global shortcut API. Bind the plugin in
-ordinary Zellij KDL. The example reuses Zellij's existing session leader:
-press `Ctrl+o`, then `g`.
+ordinary Zellij KDL. The example provides a direct `Ctrl+Shift+e` shortcut and
+keeps `Ctrl+o`, then `g` as a fallback.
 
 ```kdl
 plugins {
-    tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
+    pane-hud location="file:/absolute/path/dist/pane-hud.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
@@ -144,9 +144,18 @@ plugins {
 }
 
 keybinds {
+    shared_except "locked" {
+        bind "Ctrl Shift e" {
+            SwitchToMode "normal"
+            LaunchOrFocusPlugin "pane-hud" {
+                floating true
+                move_to_focused_tab true
+            }
+        }
+    }
     session {
         bind "g" {
-            LaunchOrFocusPlugin "tree-hud" {
+            LaunchOrFocusPlugin "pane-hud" {
                 floating true
                 move_to_focused_tab true
             }
@@ -156,8 +165,9 @@ keybinds {
 }
 ```
 
-Change the final `"g"` binding to any unused key in Zellij's session mode.
-Restart Zellij or reload the config after changing the binding.
+Both shortcuts are configurable. `Ctrl+Shift+e` launches directly from normal
+mode, while `Ctrl+o`, then `g` remains available through Zellij's session
+leader. Restart Zellij or reload the config after changing either binding.
 
 See [`examples/config.kdl`](examples/config.kdl) for a complete example.
 Earlier `Ctrl+Space` and `Ctrl+g` candidates conflicted with the local setup and
@@ -167,6 +177,7 @@ are not registered by this plugin.
 
 | Key | Action |
 |---|---|
+| `Ctrl+Shift+e` | Open or focus the HUD directly |
 | `Ctrl+o`, then `g` | Open or focus the HUD |
 | Printable text | Edit the search query |
 | Backspace | Delete one character |
@@ -196,7 +207,7 @@ Legacy tree/detail keys are still accepted so existing configs do not fail,
 but they no longer affect layout or search. Use `row_format` to choose visible
 and searchable fields.
 
-`tree-hud` can coexist with `zellij-hud`. Keep both plugin aliases and load
+`pane-hud` can coexist with `zellij-hud`. Keep both plugin aliases and load
 only the plugins that need background activation; the HUD itself is launched
 on demand.
 

@@ -1,5 +1,5 @@
 [package]
-name = "tree-hud-plugin"
+name = "pane-hud-plugin"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -9,9 +9,9 @@ rust-version.workspace = true
 crate-type = ["rlib"]
 
 [[bin]]
-name = "tree-hud-plugin"
+name = "pane-hud-plugin"
 path = "src/main.rs"
 
 [dependencies]
-tree-hud-core = { path = "../tree-hud-core" }
+pane-hud-core = { path = "../pane-hud-core" }
 zellij-tile.workspace = true

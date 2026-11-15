@@ -1370,6 +1370,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c45bb4a6ae1280ec0803b1ef9d3455eb50f01efbbe1447ab020f1d54fba9d8"
 
 [[package]]
+name = "pane-hud-core"
+version = "0.1.0"
+dependencies = [
+ "unicode-width 0.2.3",
+]
+
+[[package]]
+name = "pane-hud-plugin"
+version = "0.1.0"
+dependencies = [
+ "pane-hud-core",
+ "zellij-tile",
+]
+
+[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2062,21 +2077,6 @@ checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
  "pin-project",
  "tracing",
-]
-
-[[package]]
-name = "tree-hud-core"
-version = "0.1.0"
-dependencies = [
- "unicode-width 0.2.3",
-]
-
-[[package]]
-name = "tree-hud-plugin"
-version = "0.1.0"
-dependencies = [
- "tree-hud-core",
- "zellij-tile",
 ]
 
 [[package]]

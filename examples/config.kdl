@@ -1,6 +1,6 @@
 // Replace /absolute/path with this repository's absolute checkout path.
 plugins {
-    tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
+    pane-hud location="file:/absolute/path/dist/pane-hud.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
@@ -10,10 +10,21 @@ plugins {
 }
 
 keybinds {
-    // Use Zellij's existing session leader: Ctrl+o, then g.
+    // Preferred direct shortcut.
+    shared_except "locked" {
+        bind "Ctrl Shift e" {
+            SwitchToMode "normal"
+            LaunchOrFocusPlugin "pane-hud" {
+                floating true
+                move_to_focused_tab true
+            }
+        }
+    }
+
+    // Fallback through Zellij's existing session leader: Ctrl+o, then g.
     session {
         bind "g" {
-            LaunchOrFocusPlugin "tree-hud" {
+            LaunchOrFocusPlugin "pane-hud" {
                 floating true
                 move_to_focused_tab true
             }

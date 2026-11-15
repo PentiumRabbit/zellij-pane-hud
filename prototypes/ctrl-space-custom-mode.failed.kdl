@@ -4,10 +4,10 @@
 // Desired sequence: Ctrl+Space -> Space.
 keybinds clear-defaults=true {
     normal {
-        bind "Ctrl Space" { SwitchToMode "tree-hud-leader"; }
+        bind "Ctrl Space" { SwitchToMode "pane-hud-leader"; }
         bind "Ctrl Shift q" { Quit; }
     }
-    tree-hud-leader {
+    pane-hud-leader {
         bind "Space" {
             LaunchOrFocusPlugin "zellij:about" {
                 floating true

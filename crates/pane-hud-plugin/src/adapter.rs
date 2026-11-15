@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use tree_hud_core::app::NavigationTarget;
-use tree_hud_core::model::{
+use pane_hud_core::app::NavigationTarget;
+use pane_hud_core::model::{
     DeadSessionInput, PaneInput, PaneManifestInput, SessionInput, TabInput,
 };
-use tree_hud_core::style::{ColorSpec, ThemePalette};
+use pane_hud_core::style::{ColorSpec, ThemePalette};
 use zellij_tile::prelude::{
     BareKey, KeyModifier, KeyWithModifier, PaletteColor, PaneId, PaneInfo, PaneManifest,
     SessionInfo, Style, TabInfo,

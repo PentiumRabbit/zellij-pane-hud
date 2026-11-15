@@ -1,4 +1,4 @@
-use tree_hud_core::template::{RowTemplate, TemplateField, TemplatePart};
+use pane_hud_core::template::{RowTemplate, TemplateField, TemplatePart};
 
 #[test]
 fn parses_fields_literals_and_escaped_braces() {

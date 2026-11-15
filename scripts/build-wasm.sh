@@ -9,14 +9,14 @@ if ! rustup target list --installed | grep -qx "wasm32-wasip1"; then
     exit 1
 fi
 
-cargo build -p tree-hud-plugin --target wasm32-wasip1 --release
+cargo build -p pane-hud-plugin --target wasm32-wasip1 --release
 
 release_dir="$repo_root/target/wasm32-wasip1/release"
 source_wasm=""
 for candidate in \
-    "$release_dir/tree-hud-plugin.wasm" \
-    "$release_dir/tree_hud_plugin.wasm" \
-    "$release_dir/libtree_hud_plugin.wasm"
+    "$release_dir/pane-hud-plugin.wasm" \
+    "$release_dir/pane_hud_plugin.wasm" \
+    "$release_dir/libpane_hud_plugin.wasm"
 do
     if [[ -f "$candidate" ]]; then
         source_wasm="$candidate"
@@ -25,12 +25,12 @@ do
 done
 
 if [[ -z "$source_wasm" ]]; then
-    printf '%s\n' "Could not find the built tree-hud WASM artifact." >&2
+    printf '%s\n' "Could not find the built pane-hud WASM artifact." >&2
     exit 1
 fi
 
 mkdir -p "$repo_root/dist"
-cp "$source_wasm" "$repo_root/dist/tree-hud.wasm"
+cp "$source_wasm" "$repo_root/dist/pane-hud.wasm"
 
-printf '\nPlugin: %s\n' "$repo_root/dist/tree-hud.wasm"
+printf '\nPlugin: %s\n' "$repo_root/dist/pane-hud.wasm"
 printf 'Config: %s\n' "$repo_root/examples/config.kdl"
