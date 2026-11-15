@@ -184,7 +184,7 @@ Implemented release path:
 keybinds {
     session {
         bind "g" {
-            LaunchOrFocusPlugin "pane-hud" {
+            LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
             }

@@ -1,4 +1,4 @@
-use pane_hud_core::style::{
+use pane_switcher_core::style::{
     pad_spans, spans_to_ansi, spans_to_ansi_with_palette, truncate_spans, ColorSpec,
     ForegroundColor, StyledSpan, ThemePalette,
 };

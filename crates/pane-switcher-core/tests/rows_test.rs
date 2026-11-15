@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use pane_hud_core::config::Config;
-use pane_hud_core::model::{
+use pane_switcher_core::config::Config;
+use pane_switcher_core::model::{
     NodeKey, PaneInput, PaneManifestInput, PaneValueCache, SessionInput, TabInput, World,
 };
-use pane_hud_core::rows::{ProgressState, Rows};
+use pane_switcher_core::rows::{ProgressState, Rows};
 
 fn pane(id: u32, title: &str, focused: bool, initial_command: &str) -> PaneInput {
     PaneInput {

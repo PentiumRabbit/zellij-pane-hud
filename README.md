@@ -1,6 +1,6 @@
-# zellij-pane-hud
+# zellij-pane-switcher
 
-[![CI](https://github.com/PentiumRabbit/zellij-pane-hud/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PentiumRabbit/zellij-pane-hud/actions/workflows/ci.yml)
+[![CI](https://github.com/PentiumRabbit/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PentiumRabbit/zellij-pane-switcher/actions/workflows/ci.yml)
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, title, relative directory,
@@ -113,7 +113,7 @@ rustup target add wasm32-wasip1
 ./scripts/build-wasm.sh
 ```
 
-The build script writes `dist/pane-hud.wasm`.
+The build script writes `dist/pane-switcher.wasm`.
 
 Run the full verification suite:
 
@@ -129,7 +129,7 @@ zellij --config examples/config.kdl setup --check
 `check-snapshot.sh` requires `zellij-plugin-snapshot 0.2.3`.
 
 GitHub Actions runs the same checks for pull requests and pushes to `main`,
-then uploads `pane-hud.wasm` as a workflow artifact. Pushing a `v*` tag creates
+then uploads `pane-switcher.wasm` as a workflow artifact. Pushing a `v*` tag creates
 or updates a GitHub Release and publishes the WASM file plus its SHA-256
 checksum.
 
@@ -141,7 +141,7 @@ keeps `Ctrl+o`, then `g` as a fallback.
 
 ```kdl
 plugins {
-    pane-hud location="https://github.com/PentiumRabbit/zellij-pane-hud/releases/latest/download/pane-hud.wasm" {
+    pane-switcher location="https://github.com/PentiumRabbit/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
@@ -154,7 +154,7 @@ keybinds {
     shared_except "locked" {
         bind "Ctrl Shift e" {
             SwitchToMode "normal"
-            LaunchOrFocusPlugin "pane-hud" {
+            LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
             }
@@ -162,7 +162,7 @@ keybinds {
     }
     session {
         bind "g" {
-            LaunchOrFocusPlugin "pane-hud" {
+            LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
             }
@@ -174,7 +174,7 @@ keybinds {
 
 The release URL automatically follows the latest published release. For local
 development, replace it with
-`file:/absolute/path/to/zellij-pane-hud/dist/pane-hud.wasm`.
+`file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm`.
 
 Both shortcuts are configurable. `Ctrl+Shift+e` launches directly from normal
 mode, while `Ctrl+o`, then `g` remains available through Zellij's session
@@ -188,8 +188,8 @@ are not registered by this plugin.
 
 | Key | Action |
 |---|---|
-| `Ctrl+Shift+e` | Open or focus the HUD directly |
-| `Ctrl+o`, then `g` | Open or focus the HUD |
+| `Ctrl+Shift+e` | Open or focus the pane switcher directly |
+| `Ctrl+o`, then `g` | Open or focus the pane switcher |
 | Printable text | Edit the search query |
 | Backspace | Delete one character |
 | `Ctrl+w` | Delete the previous word |
@@ -218,9 +218,9 @@ Legacy tree/detail keys are still accepted so existing configs do not fail,
 but they no longer affect layout or search. Use `row_format` to choose visible
 and searchable fields.
 
-`pane-hud` can coexist with `zellij-hud`. Keep both plugin aliases and load
-only the plugins that need background activation; the HUD itself is launched
-on demand.
+`pane-switcher` can coexist with `zellij-hud`. Keep both plugin aliases and load
+only the plugins that need background activation; the pane switcher itself is
+launched on demand.
 
 ## Permissions and limitations
 

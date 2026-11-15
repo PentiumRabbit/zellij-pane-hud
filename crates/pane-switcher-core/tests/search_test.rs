@@ -1,4 +1,4 @@
-use pane_hud_core::search::{
+use pane_switcher_core::search::{
     match_subsequence, match_substring, normalize_query, score_subsequence, score_substring,
 };
 

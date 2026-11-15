@@ -1,6 +1,6 @@
-use pane_hud_core::input::{Selection, TextQuery};
-use pane_hud_core::model::{LivePane, NodeKey};
-use pane_hud_core::rows::{FieldMatches, ProgressState, Row, Rows};
+use pane_switcher_core::input::{Selection, TextQuery};
+use pane_switcher_core::model::{LivePane, NodeKey};
+use pane_switcher_core::rows::{FieldMatches, ProgressState, Row, Rows};
 
 fn key(session: &str, id: u32) -> NodeKey {
     NodeKey::Pane {

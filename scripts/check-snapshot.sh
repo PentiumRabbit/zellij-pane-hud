@@ -10,12 +10,12 @@ if ! command -v zellij-plugin-snapshot >/dev/null 2>&1; then
     exit 1
 fi
 
-if [[ ! -s dist/pane-hud.wasm ]]; then
-    printf '%s\n' "dist/pane-hud.wasm is missing. Run ./scripts/build-wasm.sh first." >&2
+if [[ ! -s dist/pane-switcher.wasm ]]; then
+    printf '%s\n' "dist/pane-switcher.wasm is missing. Run ./scripts/build-wasm.sh first." >&2
     exit 1
 fi
 
-output_dir="$(mktemp -d /tmp/pane-hud-snapshot.XXXXXX)"
+output_dir="$(mktemp -d /tmp/pane-switcher-snapshot.XXXXXX)"
 for fixture in smoke template; do
     zellij-plugin-snapshot "tests/snapshot/${fixture}.yaml" --out "$output_dir"
 done

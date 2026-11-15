@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/pane-hud-core", "crates/pane-hud-plugin"]
+members = ["crates/pane-switcher-core", "crates/pane-switcher-plugin"]
 resolver = "2"
 
 [workspace.package]
