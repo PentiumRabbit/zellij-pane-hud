@@ -186,7 +186,7 @@ fn type_icon(row: &Row, mode: IconsMode) -> (String, ForegroundColor) {
     };
     let color = match state {
         PaneVisualState::Focused => ForegroundColor::Green,
-        PaneVisualState::Shell => ForegroundColor::Gray,
+        PaneVisualState::Shell => ForegroundColor::Green,
         PaneVisualState::Command => ForegroundColor::Cyan,
         PaneVisualState::Codex => ForegroundColor::Magenta,
         PaneVisualState::Claude => ForegroundColor::Orange,

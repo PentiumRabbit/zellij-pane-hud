@@ -138,7 +138,7 @@ Command category:
 | Category | Color |
 |---|---|
 | focused | green |
-| shell | gray |
+| shell | green |
 | command | cyan |
 | Codex | magenta |
 | Claude | orange |

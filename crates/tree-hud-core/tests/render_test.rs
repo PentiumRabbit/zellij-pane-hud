@@ -67,6 +67,29 @@ fn progress_and_type_icons_use_semantic_colors() {
 }
 
 #[test]
+fn shell_type_icons_use_a_visible_green_instead_of_idle_gray() {
+    let mut shell = row(1, "shell", ".", "zsh");
+    shell.progress = ProgressState::Idle;
+    let rows = Rows { rows: vec![shell] };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        80,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+    let rendered = frame.lines.join("\n");
+
+    assert!(rendered.contains("38;5;46"));
+    assert!(rendered.contains(">_"));
+    assert!(rendered.contains("38;5;245"));
+    assert!(rendered.contains("○"));
+}
+
+#[test]
 fn fuzzy_match_segments_are_bold_yellow() {
     let rendered = render_one(false, "s");
 
