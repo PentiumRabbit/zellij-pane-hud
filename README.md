@@ -1,5 +1,7 @@
 # zellij-pane-hud
 
+[![CI](https://github.com/PentiumRabbit/zellij-pane-hud/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PentiumRabbit/zellij-pane-hud/actions/workflows/ci.yml)
+
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, title, relative directory,
 session/tab, full command, and pane ID.
@@ -126,6 +128,11 @@ zellij --config examples/config.kdl setup --check
 
 `check-snapshot.sh` requires `zellij-plugin-snapshot 0.2.3`.
 
+GitHub Actions runs the same checks for pull requests and pushes to `main`,
+then uploads `pane-hud.wasm` as a workflow artifact. Pushing a `v*` tag creates
+or updates a GitHub Release and publishes the WASM file plus its SHA-256
+checksum.
+
 ## Zellij configuration
 
 Zellij plugins do not define their own global shortcut API. Bind the plugin in
@@ -134,7 +141,7 @@ keeps `Ctrl+o`, then `g` as a fallback.
 
 ```kdl
 plugins {
-    pane-hud location="file:/absolute/path/dist/pane-hud.wasm" {
+    pane-hud location="https://github.com/PentiumRabbit/zellij-pane-hud/releases/latest/download/pane-hud.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
@@ -164,6 +171,10 @@ keybinds {
     }
 }
 ```
+
+The release URL automatically follows the latest published release. For local
+development, replace it with
+`file:/absolute/path/to/zellij-pane-hud/dist/pane-hud.wasm`.
 
 Both shortcuts are configurable. `Ctrl+Shift+e` launches directly from normal
 mode, while `Ctrl+o`, then `g` remains available through Zellij's session
