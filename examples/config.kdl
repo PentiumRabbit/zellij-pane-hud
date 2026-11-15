@@ -17,6 +17,7 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
+                skip_plugin_cache true
             }
         }
     }
@@ -27,6 +28,7 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
+                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
