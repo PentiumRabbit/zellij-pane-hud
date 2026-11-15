@@ -324,13 +324,18 @@ https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switc
 ```
 
 Zellij may reuse a cached WASM artifact even when the URL path remains stable.
-Launching with `skip_plugin_cache true` forces a newly opened plugin pane to
-resolve and compile the current latest release. Focusing an already running
-plugin reuses that instance, so users close and reopen it to apply an update.
+The preferred deployment strategy checks GitHub's latest release before a new
+Zellij server starts, reads the published asset digest, and removes numeric
+plugin cache files that do not belong to the current HUD releases. The plugin
+then downloads the current WASM on first use and reuses the cache afterward.
 
-Versioned release URLs without `skip_plugin_cache` are available for
-reproducible installs and faster repeated launches. Local development uses
-`file:` locations instead.
+This startup check avoids the cost of `skip_plugin_cache true`, which remains a
+native fallback for deployments without a launcher and forces a remote download
+and compilation on every newly opened pane. Focusing an already running plugin
+reuses that instance, so users close and reopen it to apply an update.
+
+Versioned release URLs are available for reproducible installs. Local
+development uses `file:` locations instead.
 
 ## Error handling
 

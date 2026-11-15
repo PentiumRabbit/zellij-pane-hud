@@ -1,4 +1,4 @@
-// The latest release is fetched whenever a new plugin pane is launched.
+// A launcher should sync Zellij's numeric plugin cache before a new server.
 // Publish updates by pushing a v* tag; close and reopen to replace a live pane.
 plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
@@ -11,14 +11,13 @@ plugins {
 }
 
 keybinds {
-    // Preferred direct shortcut. skip_plugin_cache avoids stale remote plugins.
+    // Preferred direct shortcut.
     shared_except "locked" {
         bind "Ctrl Shift e" {
             SwitchToMode "normal"
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
         }
     }
@@ -29,7 +28,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
