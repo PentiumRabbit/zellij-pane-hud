@@ -1,5 +1,7 @@
 # zellij-pane-switcher
 
+[English](README.md) | [简体中文](README_CN.md)
+
 [![CI](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml)
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
