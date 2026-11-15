@@ -1,0 +1,10 @@
+pub mod app;
+pub mod config;
+pub mod details;
+pub mod icons;
+pub mod input;
+pub mod model;
+pub mod render;
+pub mod rows;
+pub mod search;
+pub mod template;
