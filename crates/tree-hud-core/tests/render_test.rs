@@ -129,6 +129,29 @@ fn custom_template_controls_field_order_and_visible_values() {
 }
 
 #[test]
+fn default_row_shows_all_pane_information() {
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex --full-auto")],
+    };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        120,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions { color: false },
+    );
+
+    assert!(frame.lines[3].contains("src renderer"));
+    assert!(frame.lines[3].contains("src/ui"));
+    assert!(frame.lines[3].contains("work/code"));
+    assert!(frame.lines[3].contains("codex --full-auto"));
+    assert!(frame.lines[3].contains("#1"));
+}
+
+#[test]
 fn every_line_is_unicode_width_safe_and_the_frame_is_exact_height() {
     let config = Config::default();
     let rows = Rows {

@@ -70,7 +70,8 @@ polling loop.
 - no session, tab, dead-session, detail, or fold rows;
 - no expansion state;
 - Left/Right produce `InputIntent::Ignored`;
-- default row format `{progress} {icon} {title}  {dir}`;
+- default row format
+  `{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}`;
 - text fields in `row_format` define the search corpus automatically;
 - `{dir}` is component-safe relative to the focused pane CWD.
 

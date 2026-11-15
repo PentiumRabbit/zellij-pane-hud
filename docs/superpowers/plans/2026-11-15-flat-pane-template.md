@@ -40,7 +40,8 @@
 Produces:
 
 ```rust
-pub const DEFAULT_ROW_FORMAT: &str = "{progress} {icon} {title}  {dir}";
+pub const DEFAULT_ROW_FORMAT: &str =
+    "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TemplateField {
@@ -980,7 +981,7 @@ multi-state visual fixtures.
 plugins {
     tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
         scope "all"
-        row_format "{progress} {icon} {title}  {dir}"
+        row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
         search_mode "fuzzy"
         spinner_fps "4"
@@ -991,7 +992,7 @@ plugins {
 Document additional examples:
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 {icon} {session}/{tab} {title}  {dir}  {command}
 {progress} {title} [{dir}]
 ```

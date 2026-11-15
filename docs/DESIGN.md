@@ -32,15 +32,15 @@ Selection is restored by stable session/tab/pane identity across row rebuilds.
 ## Default row
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 ```
 
 Example:
 
 ```text
-◓ ❉ fix search rendering  crates/tree-hud-core
-○ >_ zsh                  .
-✖ 󰈙 old editor            workspace
+◓ ❉ fix search rendering  crates/tree-hud-core  work/code  codex --full-auto  #3
+○ >_ zsh  .  work/shell  zsh  #7
+✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```
 
 Progress comes first so running state is the easiest attribute to scan.
@@ -73,7 +73,8 @@ Rules:
 Search corpus examples:
 
 ```text
-{progress} {icon} {title}  {dir}       -> title, dir
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+                                         -> title, dir, session, tab, command, pane_id
 {icon} {session}/{tab} {title}         -> session, tab, title
 {progress} {title} {command}           -> title, command
 ```
@@ -255,7 +256,7 @@ their rows still support structural search and pane navigation.
 
 ```kdl
 scope "all"                    // current | all
-row_format "{progress} {icon} {title}  {dir}"
+row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
 spinner_fps "4"

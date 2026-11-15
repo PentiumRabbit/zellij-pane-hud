@@ -1,4 +1,5 @@
-pub const DEFAULT_ROW_FORMAT: &str = "{progress} {icon} {title}  {dir}";
+pub const DEFAULT_ROW_FORMAT: &str =
+    "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TemplateField {

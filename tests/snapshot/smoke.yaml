@@ -2,7 +2,7 @@ name: smoke
 plugin: ../../dist/tree-hud.wasm
 config:
   icons: nerd
-  row_format: "{progress} {icon} {title}  {dir}"
+  row_format: "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
 world:
   current: demo
   sessions:

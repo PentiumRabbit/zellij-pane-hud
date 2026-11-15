@@ -1,8 +1,8 @@
 # zellij-tree-hud
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
-one compact row with a colored running-state indicator, pane/command icon,
-title, and directory relative to the currently focused pane.
+one compact row with progress, command type, title, relative directory,
+session/tab, full command, and pane ID.
 
 Type to fuzzy-filter the pane list, then press Enter to focus the selected pane
 in the current or another live session.
@@ -11,9 +11,9 @@ in the current or another live session.
 ╭─ FIND ───────────────────────────────────────────────╮
 │ › sr                                          Esc   │
 ├──────────────────────────────────────────────────────┤
-│ ◓ ❉ src renderer  src/ui                            │
-│ ○ 󰈙 editor notes  workspace/notes                   │
-│ ✖ >_ old shell     /tmp/elsewhere                   │
+│ ◓ ❉ src renderer  src/ui  work/code  codex --full-auto  #1 │
+│ ○ 󰈙 editor notes  workspace/notes  work/code  nvim  #2      │
+│ ✖ >_ old shell  /tmp/elsewhere  work/logs  zsh  #3           │
 │ ↑↓ move  Enter jump  Esc close                      │
 ╰──────────────────────────────────────────────────────╯
 ```
@@ -40,7 +40,7 @@ in the current or another live session.
 ## Default row
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 ```
 
 Supported fields:
@@ -56,9 +56,9 @@ Supported fields:
 | `{command}` | Cached foreground command or initial-command fallback |
 | `{pane_id}` | Numeric terminal pane ID |
 
-Only text fields present in the active format are searchable. The default
-format therefore searches title and relative directory. Adding `{command}` or
-`{session}` automatically adds that field to the search corpus.
+Only text fields present in the active format are searchable. The complete
+default format therefore searches title, relative directory, session, tab,
+command, and pane ID. Removing a field also removes it from the search corpus.
 
 `{{` and `}}` emit literal braces. Unknown or unterminated placeholders remain
 literal. An empty format falls back to the default.
@@ -66,7 +66,7 @@ literal. An empty format falls back to the default.
 More examples:
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 {icon} {session}/{tab} {title}  {dir}  {command}
 {progress} {title} [{dir}]
 ```
@@ -134,7 +134,7 @@ press `Ctrl+o`, then `g`.
 plugins {
     tree-hud location="file:/absolute/path/dist/tree-hud.wasm" {
         scope "all"
-        row_format "{progress} {icon} {title}  {dir}"
+        row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
         search_mode "fuzzy"
         spinner_fps "4"
@@ -183,7 +183,7 @@ Unknown keys are ignored. Invalid values fall back per field.
 
 ```kdl
 scope "all"                    // current | all
-row_format "{progress} {icon} {title}  {dir}"
+row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
 spinner_fps "4"

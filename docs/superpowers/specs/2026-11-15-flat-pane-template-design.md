@@ -32,15 +32,15 @@ order.
 The default format is:
 
 ```text
-{progress} {icon} {title}  {dir}
+{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
 ```
 
 For example:
 
 ```text
-◓ ❉ fix search rendering  crates/tree-hud-core
-○ >_ zsh                  .
-✖ 󰈙 old editor            workspace
+◓ ❉ fix search rendering  crates/tree-hud-core  work/code  codex --full-auto  #3
+○ >_ zsh  .  work/shell  zsh  #7
+✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
 ```
 
 The progress field is deliberately near the beginning so running state is easy
@@ -93,7 +93,8 @@ Fuzzy mode returns both a score and the matched character positions.
 Substring mode returns the contiguous matched character range.
 
 - Only text fields present in `row_format` are searched. The default format
-  therefore searches title and relative directory.
+  therefore searches title, relative directory, session, tab, command, and
+  pane ID.
 - Text fields added to the format, such as `{command}` or `{session}`, become
   searchable automatically.
 - Matching is case-insensitive across UTF-8 text.
@@ -142,7 +143,7 @@ foregrounds remain visible on top of that background.
 The active configuration becomes:
 
 ```kdl
-row_format "{progress} {icon} {title}  {dir}"
+row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
 scope "all"                    // current | all
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
