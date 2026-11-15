@@ -30,27 +30,27 @@ test -s "$template"
 perl -pe 's/\e\[[0-9;]*m//g' "$smoke" >"$smoke_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$template" >"$template_plain"
 
-rg -a -q "FIND" "$smoke"
-rg -q "src color renderer" "$smoke_plain"
-rg -q "workspace/notes" "$smoke_plain"
-rg -q "/work/application" "$smoke_plain"
-rg -q "demo/code" "$smoke_plain"
-rg -q "codex --full-auto" "$smoke_plain"
-rg -q "#1" "$smoke_plain"
-rg -a -q "38;(2|5);" "$smoke"
-rg -a -q "1;38;(2|5);" "$smoke"
-rg -a -q "48;(2|5);" "$smoke"
+grep -a -q "FIND" "$smoke"
+grep -q "src color renderer" "$smoke_plain"
+grep -q "workspace/notes" "$smoke_plain"
+grep -q "/work/application" "$smoke_plain"
+grep -q "demo/code" "$smoke_plain"
+grep -q "codex --full-auto" "$smoke_plain"
+grep -q "#1" "$smoke_plain"
+grep -a -E -q "38;(2|5);" "$smoke"
+grep -a -E -q "1;38;(2|5);" "$smoke"
+grep -a -E -q "48;(2|5);" "$smoke"
 
-if rg -q "selected " "$smoke_plain"; then
+if grep -q "selected " "$smoke_plain"; then
     printf '%s\n' "Unexpected detail panel heading in smoke snapshot." >&2
     exit 1
 fi
 
-rg -q "CX demo/code release tasks" "$template_plain"
-rg -q "codex --full-auto" "$template_plain"
-rg -a -q "1;38;(2|5);" "$template"
+grep -q "CX demo/code release tasks" "$template_plain"
+grep -q "codex --full-auto" "$template_plain"
+grep -a -E -q "1;38;(2|5);" "$template"
 
-if rg -q "selected " "$template_plain"; then
+if grep -q "selected " "$template_plain"; then
     printf '%s\n' "Unexpected detail panel heading in template snapshot." >&2
     exit 1
 fi

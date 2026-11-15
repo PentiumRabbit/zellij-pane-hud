@@ -1,6 +1,6 @@
-// Replace /absolute/path with this repository's absolute checkout path.
+// Published automatically by the v* tag workflow.
 plugins {
-    pane-hud location="file:/absolute/path/dist/pane-hud.wasm" {
+    pane-hud location="https://github.com/PentiumRabbit/zellij-pane-hud/releases/latest/download/pane-hud.wasm" {
         scope "all"
         row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
         icons "nerd"
