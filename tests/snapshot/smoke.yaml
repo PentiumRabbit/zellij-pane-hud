@@ -12,6 +12,9 @@ geometry:
   cols: 100
 steps:
   - action: grant_permissions
+  - action: mode_update
+    mode: normal
+    session: demo
   - action: session_update
     current: demo
     sessions:

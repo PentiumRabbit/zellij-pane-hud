@@ -1,4 +1,7 @@
-use tree_hud_core::style::{pad_spans, spans_to_ansi, truncate_spans, ForegroundColor, StyledSpan};
+use tree_hud_core::style::{
+    pad_spans, spans_to_ansi, spans_to_ansi_with_palette, truncate_spans, ColorSpec,
+    ForegroundColor, StyledSpan, ThemePalette,
+};
 
 fn span(text: &str, foreground: ForegroundColor) -> StyledSpan {
     StyledSpan {
@@ -59,5 +62,25 @@ fn truncation_preserves_the_original_style_on_the_ellipsis() {
     assert_eq!(
         spans_to_ansi(&truncated, true),
         "\u{1b}[38;5;51mabc…\u{1b}[0m"
+    );
+}
+
+#[test]
+fn themed_ansi_uses_zellij_rgb_foreground_and_selection_background() {
+    let spans = vec![StyledSpan {
+        text: "hit".into(),
+        foreground: ForegroundColor::Yellow,
+        selected_background: true,
+        bold: true,
+    }];
+    let palette = ThemePalette {
+        yellow: ColorSpec::Rgb((224, 175, 104)),
+        selected_background: ColorSpec::Rgb((26, 27, 38)),
+        ..ThemePalette::default()
+    };
+
+    assert_eq!(
+        spans_to_ansi_with_palette(&spans, true, &palette),
+        "\u{1b}[1;38;2;224;175;104;48;2;26;27;38mhit\u{1b}[0m"
     );
 }

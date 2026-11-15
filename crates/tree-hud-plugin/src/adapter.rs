@@ -4,8 +4,10 @@ use tree_hud_core::app::NavigationTarget;
 use tree_hud_core::model::{
     DeadSessionInput, PaneInput, PaneManifestInput, SessionInput, TabInput,
 };
+use tree_hud_core::style::{ColorSpec, ThemePalette};
 use zellij_tile::prelude::{
-    BareKey, KeyModifier, KeyWithModifier, PaneId, PaneInfo, PaneManifest, SessionInfo, TabInfo,
+    BareKey, KeyModifier, KeyWithModifier, PaletteColor, PaneId, PaneInfo, PaneManifest,
+    SessionInfo, Style, TabInfo,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -126,6 +128,34 @@ pub fn dead_session_inputs(sessions: &[(String, std::time::Duration)]) -> Vec<De
         .collect::<Vec<_>>();
     sessions.sort_by(|left, right| left.name.cmp(&right.name));
     sessions
+}
+
+pub fn theme_palette(style: &Style) -> ThemePalette {
+    let colors = &style.colors;
+    let text = colors.text_unselected;
+    let selected = colors.text_selected;
+    ThemePalette {
+        default: palette_color(text.base),
+        gray: palette_color(text.base),
+        green: palette_color(text.emphasis_2),
+        cyan: palette_color(text.emphasis_1),
+        magenta: palette_color(text.emphasis_3),
+        orange: palette_color(text.emphasis_0),
+        blue: palette_color(colors.multiplayer_user_colors.player_2),
+        red: palette_color(colors.exit_code_error.base),
+        yellow: palette_color(colors.multiplayer_user_colors.player_4),
+        dark_gray: palette_color(text.base),
+        border: palette_color(colors.frame_selected.base),
+        selected_foreground: palette_color(selected.base),
+        selected_background: palette_color(selected.background),
+    }
+}
+
+fn palette_color(color: PaletteColor) -> ColorSpec {
+    match color {
+        PaletteColor::Rgb(rgb) => ColorSpec::Rgb(rgb),
+        PaletteColor::EightBit(index) => ColorSpec::Indexed(index),
+    }
 }
 
 pub fn navigation_action(

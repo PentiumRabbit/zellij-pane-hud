@@ -113,9 +113,9 @@ fn selected_rows_have_a_full_width_dark_background() {
         RenderOptions::default(),
     );
 
-    assert!(frame.lines[3].contains("48;5;24"));
-    assert!(frame.lines[3].contains("38;5;51;48;5;24"));
-    assert!(frame.lines[3].contains("38;5;201;48;5;24"));
+    assert!(frame.lines[2].contains("48;5;24"));
+    assert!(frame.lines[2].contains("38;5;51;48;5;24"));
+    assert!(frame.lines[2].contains("38;5;201;48;5;24"));
     assert_line_widths(&frame.lines, 60);
 }
 
@@ -125,6 +125,32 @@ fn detail_panel_text_is_not_rendered() {
 
     assert!(!rendered.contains("selected\n"));
     assert!(!rendered.contains("command  "));
+}
+
+#[test]
+fn relies_on_the_zellij_pane_frame_instead_of_drawing_an_inner_border() {
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex")],
+    };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        60,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+    let rendered = frame.lines.join("\n");
+
+    assert!(frame.lines[0].contains("FIND"));
+    assert!(!rendered.contains('╭'));
+    assert!(!rendered.contains('╰'));
+    assert_line_widths(&frame.lines, 60);
 }
 
 #[test]
@@ -144,11 +170,14 @@ fn custom_template_controls_field_order_and_visible_values() {
         "",
         &config,
         1,
-        RenderOptions { color: false },
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
     );
 
-    assert!(frame.lines[3].contains("work/code #1 codex --full-auto [src/ui] src renderer"));
-    assert!(!frame.lines[3].contains("fold"));
+    assert!(frame.lines[2].contains("work/code #1 codex --full-auto [src/ui] src renderer"));
+    assert!(!frame.lines[2].contains("fold"));
 }
 
 #[test]
@@ -164,14 +193,17 @@ fn default_row_shows_all_pane_information() {
         "",
         &Config::default(),
         1,
-        RenderOptions { color: false },
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
     );
 
-    assert!(frame.lines[3].contains("src renderer"));
-    assert!(frame.lines[3].contains("src/ui"));
-    assert!(frame.lines[3].contains("work/code"));
-    assert!(frame.lines[3].contains("codex --full-auto"));
-    assert!(frame.lines[3].contains("#1"));
+    assert!(frame.lines[2].contains("src renderer"));
+    assert!(frame.lines[2].contains("src/ui"));
+    assert!(frame.lines[2].contains("work/code"));
+    assert!(frame.lines[2].contains("codex --full-auto"));
+    assert!(frame.lines[2].contains("#1"));
 }
 
 #[test]
@@ -198,7 +230,7 @@ fn every_line_is_unicode_width_safe_and_the_frame_is_exact_height() {
 
     assert_eq!(frame.lines.len(), 9);
     assert_line_widths(&frame.lines, 24);
-    assert_eq!(frame.cursor.map(|(_, row)| row), Some(1));
+    assert_eq!(frame.cursor.map(|(_, row)| row), Some(0));
 }
 
 #[test]

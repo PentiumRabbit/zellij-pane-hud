@@ -146,24 +146,38 @@ Command category:
 | floating/fullscreen/stacked | blue |
 | unknown | dark gray |
 
-The selected row uses a dark-blue (`48;5;24`) background across its complete
-terminal width. Icon foregrounds and bold-yellow match highlights remain
-visible on that background.
+The selected row uses the active Zellij `text_selected` background across its
+complete terminal width. Icon foregrounds and bold-yellow match highlights
+remain visible on that background.
 
 Directory text is blue. Other text fields use the normal foreground.
+
+The palette is not hard-coded after startup. The plugin subscribes to
+`ModeUpdate` and maps semantic roles to the active Zellij style:
+
+- normal text: `text_unselected.base`;
+- green/cyan/magenta/orange: the corresponding Zellij emphasis colors;
+- blue/yellow: the theme's multiplayer blue and yellow slots;
+- errors: `exit_code_error.base`;
+- selected foreground/background: `text_selected`;
+- frame: `frame_selected.base`.
+
+Missing optional theme colors fall back to the normal text color so idle
+markers cannot become black and disappear on a dark background.
 
 ## Rendering
 
 The frame is:
 
 ```text
-top border
 FIND/search line
 divider
 visible pane rows
 footer
-bottom border
 ```
+
+The outer floating-pane frame/title belongs to Zellij. The plugin renders only
+the content area so a native pane frame does not produce a double border.
 
 Rendering evaluates cached template parts into styled spans:
 

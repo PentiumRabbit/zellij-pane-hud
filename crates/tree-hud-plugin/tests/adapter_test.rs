@@ -2,12 +2,14 @@ use std::collections::HashMap;
 
 use tree_hud_core::app::NavigationTarget;
 use tree_hud_core::model::NodeKey;
+use tree_hud_core::style::{ColorSpec, ThemePalette};
 use tree_hud_plugin::adapter::{
-    key_intent, navigation_action, pane_manifest_input, session_input, tab_inputs, InputIntent,
-    NavigationAction,
+    key_intent, navigation_action, pane_manifest_input, session_input, tab_inputs, theme_palette,
+    InputIntent, NavigationAction,
 };
 use zellij_tile::prelude::{
-    BareKey, KeyWithModifier, PaneId, PaneInfo, PaneManifest, SessionInfo, TabInfo,
+    BareKey, KeyWithModifier, PaletteColor, PaneId, PaneInfo, PaneManifest, SessionInfo, Style,
+    TabInfo,
 };
 
 #[test]
@@ -179,4 +181,55 @@ fn key_adapter_handles_ctrl_shortcuts_and_utf8_text() {
         key_intent(&KeyWithModifier::new(BareKey::Right)),
         InputIntent::Ignored
     );
+}
+
+#[test]
+fn zellij_style_colors_map_to_tree_hud_semantic_palette() {
+    let mut style = Style::default();
+    let colors = &mut style.colors;
+    colors.text_unselected.base = PaletteColor::Rgb((192, 202, 245));
+    colors.text_unselected.emphasis_0 = PaletteColor::Rgb((255, 158, 100));
+    colors.text_unselected.emphasis_1 = PaletteColor::Rgb((125, 207, 255));
+    colors.text_unselected.emphasis_2 = PaletteColor::Rgb((158, 206, 106));
+    colors.text_unselected.emphasis_3 = PaletteColor::Rgb((187, 154, 247));
+    colors.exit_code_error.base = PaletteColor::Rgb((247, 118, 142));
+    colors.multiplayer_user_colors.player_2 = PaletteColor::Rgb((122, 162, 247));
+    colors.multiplayer_user_colors.player_4 = PaletteColor::Rgb((224, 175, 104));
+    colors.multiplayer_user_colors.player_8 = PaletteColor::Rgb((160, 160, 180));
+    colors.text_selected.base = PaletteColor::Rgb((200, 210, 250));
+    colors.text_selected.background = PaletteColor::Rgb((26, 27, 38));
+    colors.frame_selected.base = PaletteColor::Rgb((158, 206, 106));
+
+    let palette = theme_palette(&style);
+
+    assert_eq!(
+        palette,
+        ThemePalette {
+            default: ColorSpec::Rgb((192, 202, 245)),
+            gray: ColorSpec::Rgb((192, 202, 245)),
+            green: ColorSpec::Rgb((158, 206, 106)),
+            cyan: ColorSpec::Rgb((125, 207, 255)),
+            magenta: ColorSpec::Rgb((187, 154, 247)),
+            orange: ColorSpec::Rgb((255, 158, 100)),
+            blue: ColorSpec::Rgb((122, 162, 247)),
+            red: ColorSpec::Rgb((247, 118, 142)),
+            yellow: ColorSpec::Rgb((224, 175, 104)),
+            dark_gray: ColorSpec::Rgb((192, 202, 245)),
+            border: ColorSpec::Rgb((158, 206, 106)),
+            selected_foreground: ColorSpec::Rgb((200, 210, 250)),
+            selected_background: ColorSpec::Rgb((26, 27, 38)),
+        }
+    );
+}
+
+#[test]
+fn missing_zellij_silver_does_not_make_idle_icons_black() {
+    let mut style = Style::default();
+    style.colors.text_unselected.base = PaletteColor::Rgb((192, 202, 245));
+    style.colors.multiplayer_user_colors.player_8 = PaletteColor::Rgb((0, 0, 0));
+
+    let palette = theme_palette(&style);
+
+    assert_eq!(palette.gray, ColorSpec::Rgb((192, 202, 245)));
+    assert_eq!(palette.dark_gray, ColorSpec::Rgb((192, 202, 245)));
 }

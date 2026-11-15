@@ -37,9 +37,9 @@ rg -q "/work/application" "$smoke_plain"
 rg -q "demo/code" "$smoke_plain"
 rg -q "codex --full-auto" "$smoke_plain"
 rg -q "#1" "$smoke_plain"
-rg -a -q "38;5;(51|196|245|75|201|208)" "$smoke"
-rg -a -q "1;38;5;226" "$smoke"
-rg -a -q "48;5;24" "$smoke"
+rg -a -q "38;(2|5);" "$smoke"
+rg -a -q "1;38;(2|5);" "$smoke"
+rg -a -q "48;(2|5);" "$smoke"
 
 if rg -q "selected " "$smoke_plain"; then
     printf '%s\n' "Unexpected detail panel heading in smoke snapshot." >&2
@@ -48,7 +48,7 @@ fi
 
 rg -q "CX demo/code release tasks" "$template_plain"
 rg -q "codex --full-auto" "$template_plain"
-rg -a -q "1;38;5;226" "$template"
+rg -a -q "1;38;(2|5);" "$template"
 
 if rg -q "selected " "$template_plain"; then
     printf '%s\n' "Unexpected detail panel heading in template snapshot." >&2

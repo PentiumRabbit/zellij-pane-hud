@@ -4,12 +4,13 @@ use std::io::Write;
 use tree_hud_core::app::Finder;
 use tree_hud_core::config::Config;
 use tree_hud_core::render::{render_frame, RenderOptions};
+use tree_hud_core::style::ThemePalette;
 use tree_hud_core::template::TemplateField;
 use zellij_tile::prelude::*;
 
 use crate::adapter::{
     dead_session_inputs, key_intent, navigation_action, pane_manifest_input, session_input,
-    tab_inputs, InputIntent, NavigationAction,
+    tab_inputs, theme_palette, InputIntent, NavigationAction,
 };
 
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
@@ -22,6 +23,7 @@ pub struct TreeHudPlugin {
     timer_scheduled: bool,
     last_reported_cursor: Option<Option<(usize, usize)>>,
     pane_query_failures: BTreeMap<(String, u32), PaneQueryFailures>,
+    theme: ThemePalette,
 }
 
 #[derive(Default)]
@@ -47,6 +49,7 @@ impl ZellijPlugin for TreeHudPlugin {
             EventType::PermissionRequestResult,
             EventType::Visible,
             EventType::BeforeClose,
+            EventType::ModeUpdate,
         ]);
         request_permission(&[
             PermissionType::ReadApplicationState,
@@ -161,6 +164,10 @@ impl ZellijPlugin for TreeHudPlugin {
                 }
                 false
             }
+            Event::ModeUpdate(mode) => {
+                self.theme = theme_palette(&mode.style);
+                true
+            }
             _ => false,
         }
     }
@@ -179,7 +186,10 @@ impl ZellijPlugin for TreeHudPlugin {
             &query,
             self.finder.config(),
             ticks,
-            RenderOptions::default(),
+            RenderOptions {
+                color: true,
+                palette: self.theme,
+            },
         );
         if self.should_report_cursor(frame.cursor) {
             show_cursor(frame.cursor);
@@ -360,8 +370,10 @@ mod tests {
 
     use tree_hud_core::app::Finder;
     use tree_hud_core::config::Config;
+    use tree_hud_core::style::ColorSpec;
     use zellij_tile::prelude::{
-        BareKey, Event, KeyWithModifier, PaneManifest, SessionInfo, ZellijPlugin,
+        BareKey, Event, KeyWithModifier, ModeInfo, PaletteColor, PaneManifest, SessionInfo,
+        ZellijPlugin,
     };
 
     use super::TreeHudPlugin;
@@ -481,5 +493,15 @@ mod tests {
 
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Left)));
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Right)));
+    }
+
+    #[test]
+    fn mode_update_applies_the_active_zellij_theme_palette() {
+        let mut plugin = TreeHudPlugin::default();
+        let mut mode = ModeInfo::default();
+        mode.style.colors.text_unselected.emphasis_2 = PaletteColor::Rgb((1, 2, 3));
+
+        assert!(plugin.update(Event::ModeUpdate(mode)));
+        assert_eq!(plugin.theme.green, ColorSpec::Rgb((1, 2, 3)));
     }
 }

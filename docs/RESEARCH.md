@@ -19,6 +19,7 @@ The flat pane picker is feasible with the Zellij 0.45.1 plugin APIs:
 - `focus_terminal_pane` focuses current-session panes.
 - `switch_session_with_focus` can focus a pane in another live session.
 - A floating plugin pane can render a width-bounded ANSI UI.
+- `ModeUpdate(ModeInfo)` exposes the active Zellij style and semantic palette.
 
 The main constraints are:
 
@@ -220,6 +221,12 @@ This keeps:
 - icon/match colors visible on selected rows;
 - the selected background full-width;
 - footer/search/border lines aligned.
+
+Zellij's `Text` and `Table` components expose theme-relative emphasis levels,
+but only a small fixed set of semantic foregrounds. The HUD needs independent
+progress, command-category, directory, match, and selection colors. It
+therefore uses `ModeInfo.style.colors` to build a semantic ANSI palette while
+retaining Zellij as the source of truth for the active theme.
 
 ## Performance findings
 

@@ -29,7 +29,9 @@ in the current or another live session.
 - UTF-8-safe match highlighting: matched characters are bold yellow.
 - Semantic colors for running, idle, exited, unknown, Codex, Claude, editors,
   and other commands.
-- Full-width dark-blue selected-row background while preserving icon and match
+- Colors follow the active Zellij theme through `ModeUpdate` and
+  `ModeInfo.style.colors`.
+- Full-width theme-selected row background while preserving icon and match
   colors.
 - Stable pane selection across Zellij updates and one-step cross-session pane
   focus.
@@ -194,6 +196,10 @@ Legacy tree/detail keys are still accepted so existing configs do not fail,
 but they no longer affect layout or search. Use `row_format` to choose visible
 and searchable fields.
 
+`tree-hud` can coexist with `zellij-hud`. Keep both plugin aliases and load
+only the plugins that need background activation; the HUD itself is launched
+on demand.
+
 ## Permissions and limitations
 
 The plugin requests Zellij application-state access and permission to change
@@ -207,6 +213,8 @@ pane/session focus.
   remains a user-configured Zellij keybinding.
 - Zellij 0.45.1 `LaunchOrFocusPlugin` does not provide width or height options;
   the native floating-pane size is used.
+- Zellij owns the floating pane frame. The plugin renders only content and does
+  not draw a second inner border.
 
 See [the design](docs/DESIGN.md) and
 [technical research](docs/RESEARCH.md) for implementation details.

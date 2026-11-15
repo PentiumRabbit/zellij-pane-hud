@@ -109,22 +109,27 @@ Substring mode returns the contiguous matched character range.
 Colors remain enabled in both Nerd and plain glyph modes. The glyph mode only
 changes icon characters.
 
-Default semantic colors:
+Semantic roles are mapped to the active Zellij theme through
+`ModeUpdate(ModeInfo)`:
 
 | State/Field | Color |
 |---|---|
-| focused | green |
-| running command | cyan |
-| idle shell | gray |
-| Codex | magenta |
-| Claude | orange |
-| editor | blue |
-| exited | red |
-| unknown | dim gray |
+| focused | Zellij green emphasis |
+| running command | Zellij cyan emphasis |
+| idle shell | normal text color |
+| Codex | Zellij magenta emphasis |
+| Claude | Zellij orange emphasis |
+| editor | theme blue |
+| exited | Zellij error color |
+| unknown | normal text color |
 | title | normal foreground |
-| directory | blue |
-| fuzzy highlight | bold yellow |
-| selected row background | dark blue |
+| directory | theme blue |
+| fuzzy highlight | bold theme yellow |
+| selected row foreground/background | Zellij `text_selected` |
+
+The plugin keeps semantic roles but no longer hard-codes a palette after
+receiving `ModeUpdate`. Missing optional theme slots fall back to the normal
+text color.
 
 Selected-row background spans the entire terminal width. State colors and match
 foregrounds remain visible on top of that background.

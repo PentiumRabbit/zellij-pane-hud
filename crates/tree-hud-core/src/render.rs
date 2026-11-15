@@ -3,19 +3,26 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::{Config, IconsMode};
 use crate::icons::{classify_command, icon_for, PaneVisualState};
 use crate::rows::{ProgressState, Row, Rows};
-use crate::style::{pad_spans, spans_to_ansi, truncate_spans, ForegroundColor, StyledSpan};
+use crate::style::{
+    pad_spans, spans_to_ansi_with_palette, truncate_spans, ForegroundColor, StyledSpan,
+    ThemePalette,
+};
 use crate::template::TemplateField;
 
-const BORDER_COLOR: ForegroundColor = ForegroundColor::DarkGray;
+const BORDER_COLOR: ForegroundColor = ForegroundColor::Border;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RenderOptions {
     pub color: bool,
+    pub palette: ThemePalette,
 }
 
 impl Default for RenderOptions {
     fn default() -> Self {
-        Self { color: true }
+        Self {
+            color: true,
+            palette: ThemePalette::default(),
+        }
     }
 }
 
@@ -40,14 +47,12 @@ pub fn render_frame(
         return RenderFrame::default();
     }
 
-    let mut lines = Vec::with_capacity(height);
-    lines.push(render_text_line(top_border(cols, "FIND"), options));
-
     let (search, cursor) = search_line(cols, query);
+    let mut lines = Vec::with_capacity(height);
     lines.push(render_spans(search, options));
-    lines.push(render_text_line(divider(cols, '├', '┤'), options));
+    lines.push(render_text_line(divider(cols), options));
 
-    let row_height = height.saturating_sub(5);
+    let row_height = height.saturating_sub(3);
     let selected_index = selected.filter(|index| *index < rows.rows.len());
     let start = selected_index
         .map(|index| (index + 1).saturating_sub(row_height))
@@ -58,19 +63,18 @@ pub fn render_frame(
         let absolute_index = start + index;
         let spans = row_spans(row, config, spinner_tick);
         lines.push(render_spans(
-            boxed_spans(spans, cols, selected_index == Some(absolute_index)),
+            fitted_spans(spans, cols, selected_index == Some(absolute_index)),
             options,
         ));
     }
 
-    while lines.len() < height.saturating_sub(2) {
-        lines.push(render_spans(boxed_spans(Vec::new(), cols, false), options));
+    while lines.len() < height.saturating_sub(1) {
+        lines.push(render_spans(fitted_spans(Vec::new(), cols, false), options));
     }
     lines.push(render_text_line(
-        boxed_text(" ↑↓ move  Enter jump  Esc close ", cols),
+        fitted_text(" ↑↓ move  Enter jump  Esc close ", cols, BORDER_COLOR),
         options,
     ));
-    lines.push(render_text_line(bottom_border(cols), options));
     lines.truncate(height);
 
     RenderFrame { lines, cursor }
@@ -269,39 +273,16 @@ fn push_span(spans: &mut Vec<StyledSpan>, text: String, foreground: ForegroundCo
     });
 }
 
-fn boxed_spans(spans: Vec<StyledSpan>, cols: usize, selected: bool) -> Vec<StyledSpan> {
+fn fitted_spans(spans: Vec<StyledSpan>, cols: usize, selected: bool) -> Vec<StyledSpan> {
     if cols == 0 {
         return Vec::new();
     }
-    if cols == 1 {
-        let mut spans = truncate_spans(spans, 1);
-        if selected {
-            set_selected_background(&mut spans);
-        }
-        return spans;
-    }
-
-    let mut inner = truncate_spans(spans, cols - 2);
-    inner = pad_spans(inner, cols - 2);
+    let mut fitted = truncate_spans(spans, cols);
+    fitted = pad_spans(fitted, cols);
     if selected {
-        set_selected_background(&mut inner);
+        set_selected_background(&mut fitted);
     }
-
-    let mut output = Vec::with_capacity(inner.len() + 2);
-    output.push(StyledSpan {
-        text: "│".into(),
-        foreground: BORDER_COLOR,
-        selected_background: selected,
-        bold: false,
-    });
-    output.extend(inner);
-    output.push(StyledSpan {
-        text: "│".into(),
-        foreground: BORDER_COLOR,
-        selected_background: selected,
-        bold: false,
-    });
-    output
+    fitted
 }
 
 fn set_selected_background(spans: &mut [StyledSpan]) {
@@ -310,95 +291,36 @@ fn set_selected_background(spans: &mut [StyledSpan]) {
     }
 }
 
-fn boxed_text(text: &str, cols: usize) -> Vec<StyledSpan> {
-    boxed_spans(
-        vec![StyledSpan::new(text, ForegroundColor::Default)],
-        cols,
-        false,
-    )
+fn fitted_text(text: &str, cols: usize, foreground: ForegroundColor) -> Vec<StyledSpan> {
+    fitted_spans(vec![StyledSpan::new(text, foreground)], cols, false)
 }
 
 fn search_line(cols: usize, query: &str) -> (Vec<StyledSpan>, Option<(usize, usize)>) {
-    if cols < 2 {
-        let visible = truncate_text(query, cols);
-        return (
-            vec![StyledSpan::new(visible, ForegroundColor::Default)],
-            None,
-        );
+    if cols == 0 {
+        return (Vec::new(), None);
     }
-    let inner = cols - 2;
-    let prefix = " › ";
-    let suffix = " Esc ";
+    let prefix = " FIND  › ";
+    let suffix = "  Esc ";
     let prefix_width = UnicodeWidthStr::width(prefix);
     let suffix_width = UnicodeWidthStr::width(suffix);
-    let available = inner.saturating_sub(prefix_width + suffix_width);
+    let available = cols.saturating_sub(prefix_width + suffix_width);
     if available == 0 {
-        return (
-            boxed_spans(
-                vec![StyledSpan::new(
-                    truncate_text("search", inner),
-                    ForegroundColor::Default,
-                )],
-                cols,
-                false,
-            ),
-            None,
-        );
+        return (fitted_text(" FIND  › ", cols, BORDER_COLOR), None);
     }
 
     let visible_query = tail_by_width(query, available);
     let query_width = UnicodeWidthStr::width(visible_query.as_str());
-    let padding = inner.saturating_sub(prefix_width + query_width + suffix_width);
+    let padding = cols.saturating_sub(prefix_width + query_width + suffix_width);
     let content = format!("{prefix}{visible_query}{}{suffix}", " ".repeat(padding));
-    let cursor = Some((
-        (1 + prefix_width + query_width).min(cols.saturating_sub(2)),
-        1,
-    ));
+    let cursor = Some(((prefix_width + query_width).min(cols), 0));
     (
-        boxed_spans(
-            vec![StyledSpan::new(content, ForegroundColor::Default)],
-            cols,
-            false,
-        ),
+        fitted_text(&content, cols, ForegroundColor::Default),
         cursor,
     )
 }
 
-fn top_border(cols: usize, title: &str) -> Vec<StyledSpan> {
-    let text = if cols < 2 {
-        truncate_text(title, cols)
-    } else {
-        let inner = cols - 2;
-        let title = truncate_text(&format!("─ {title} "), inner);
-        let fill = "─".repeat(inner.saturating_sub(UnicodeWidthStr::width(title.as_str())));
-        format!("╭{title}{fill}╮")
-    };
-    vec![StyledSpan::new(text, BORDER_COLOR)]
-}
-
-fn bottom_border(cols: usize) -> Vec<StyledSpan> {
-    let text = if cols < 2 {
-        "─".repeat(cols)
-    } else {
-        format!("╰{}╯", "─".repeat(cols - 2))
-    };
-    vec![StyledSpan::new(text, BORDER_COLOR)]
-}
-
-fn divider(cols: usize, left: char, right: char) -> Vec<StyledSpan> {
-    let text = if cols < 2 {
-        "─".repeat(cols)
-    } else {
-        format!("{left}{}{right}", "─".repeat(cols - 2))
-    };
-    vec![StyledSpan::new(text, BORDER_COLOR)]
-}
-
-fn truncate_text(text: &str, width: usize) -> String {
-    spans_to_ansi(
-        &truncate_spans(vec![StyledSpan::new(text, ForegroundColor::Default)], width),
-        false,
-    )
+fn divider(cols: usize) -> Vec<StyledSpan> {
+    vec![StyledSpan::new("─".repeat(cols), BORDER_COLOR)]
 }
 
 fn tail_by_width(text: &str, width: usize) -> String {
@@ -423,5 +345,5 @@ fn render_text_line(spans: Vec<StyledSpan>, options: RenderOptions) -> String {
 }
 
 fn render_spans(spans: Vec<StyledSpan>, options: RenderOptions) -> String {
-    spans_to_ansi(&spans, options.color)
+    spans_to_ansi_with_palette(&spans, options.color, &options.palette)
 }
