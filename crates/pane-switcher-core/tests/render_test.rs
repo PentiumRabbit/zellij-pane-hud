@@ -67,6 +67,56 @@ fn progress_and_type_icons_use_semantic_colors() {
 }
 
 #[test]
+fn row_fields_use_distinct_semantic_colors() {
+    let mut shell = row(1, "src renderer", "src/ui", "zsh");
+    shell.progress = ProgressState::Idle;
+    let rows = Rows { rows: vec![shell] };
+    let frame = render_frame(
+        &rows,
+        None,
+        80,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+    let rendered = &frame.lines[2];
+
+    assert!(rendered.contains("\u{1b}[38;5;51msrc renderer\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;75msrc/ui\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;201mwork\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;208mcode\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;46mzsh\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;240m1\u{1b}[0m"));
+}
+
+#[test]
+fn selected_rows_keep_field_colors_over_the_selection_background() {
+    let mut shell = row(1, "src renderer", "src/ui", "zsh");
+    shell.progress = ProgressState::Idle;
+    let rows = Rows { rows: vec![shell] };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        80,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+    let rendered = &frame.lines[2];
+
+    assert!(rendered.contains("\u{1b}[38;5;51;48;5;24msrc renderer\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;75;48;5;24msrc/ui\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;201;48;5;24mwork\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;208;48;5;24mcode\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;46;48;5;24mzsh\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;240;48;5;24m1\u{1b}[0m"));
+}
+
+#[test]
 fn shell_type_icons_use_a_visible_green_instead_of_idle_gray() {
     let mut shell = row(1, "shell", ".", "zsh");
     shell.progress = ProgressState::Idle;

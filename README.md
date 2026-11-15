@@ -31,6 +31,8 @@ in the current or another live session.
 - UTF-8-safe match highlighting: matched characters are bold yellow.
 - Semantic colors for running, idle, exited, unknown, Codex, Claude, editors,
   and other commands.
+- Field-specific colors for titles, directories, sessions, tabs, commands, and
+  pane IDs while keeping fuzzy matches bold yellow.
 - Colors follow the active Zellij theme through `ModeUpdate` and
   `ModeInfo.style.colors`.
 - Full-width theme-selected row background while preserving icon and match
