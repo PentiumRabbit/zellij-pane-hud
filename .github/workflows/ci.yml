@@ -67,14 +67,17 @@ jobs:
       - name: Install Zellij
         run: |
           archive="zellij-x86_64-unknown-linux-musl.tar.gz"
+          checksum="zellij-x86_64-unknown-linux-musl.sha256sum"
           release_url="https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}"
           curl --proto '=https' --tlsv1.2 -fsSLo "$RUNNER_TEMP/$archive" \
             "$release_url/$archive"
-          curl --proto '=https' --tlsv1.2 -fsSLo "$RUNNER_TEMP/$archive.sha256" \
-            "$release_url/$archive.sha256sum"
+          curl --proto '=https' --tlsv1.2 -fsSLo "$RUNNER_TEMP/$checksum" \
+            "$release_url/$checksum"
           cd "$RUNNER_TEMP"
-          sha256sum -c "$archive.sha256"
           tar -xzf "$archive"
+          expected="$(awk 'NR == 1 { print $1 }' "$checksum")"
+          actual="$(sha256sum zellij | awk '{ print $1 }')"
+          [[ "$actual" == "$expected" ]]
           sudo install -m 0755 zellij /usr/local/bin/zellij
           zellij --version
 
