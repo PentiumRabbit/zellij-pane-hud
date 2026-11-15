@@ -51,6 +51,21 @@ impl FieldMatches {
             TemplateField::Progress | TemplateField::Icon => {}
         }
     }
+
+    fn add_positions(&mut self, field: TemplateField, positions: impl IntoIterator<Item = usize>) {
+        let target = match field {
+            TemplateField::Session => &mut self.session,
+            TemplateField::Tab => &mut self.tab,
+            TemplateField::Title => &mut self.title,
+            TemplateField::Dir => &mut self.dir,
+            TemplateField::Command => &mut self.command,
+            TemplateField::PaneId => &mut self.pane_id,
+            TemplateField::Progress | TemplateField::Icon => return,
+        };
+        target.extend(positions);
+        target.sort_unstable();
+        target.dedup();
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -187,18 +202,19 @@ fn apply_search(row: &mut Row, config: &Config, normalized_query: &str) -> bool 
 
     let mut best_score: Option<MatchScore> = None;
     for field in config.row_format.search_fields() {
-        let text = match field {
-            TemplateField::Title => Cow::Borrowed(row.title.as_str()),
-            TemplateField::Dir => Cow::Borrowed(row.dir.as_str()),
-            TemplateField::Session => Cow::Borrowed(row.session.as_str()),
-            TemplateField::Tab => Cow::Borrowed(row.tab_name.as_str()),
-            TemplateField::Command => Cow::Borrowed(row.command.as_str()),
-            TemplateField::PaneId => Cow::Owned(row.pane.id.to_string()),
-            TemplateField::Progress | TemplateField::Icon => continue,
-        };
+        let text = field_text(row, *field);
         if let Some(result) = match_field(config.search_mode, normalized_query, &text) {
             best_score = Some(best_score.map_or(result.score, |score| score.max(result.score)));
             row.matches.set(*field, result.positions);
+        }
+    }
+    if config.search_mode == SearchMode::Fuzzy {
+        if let Some(result) = match_combined_fields(row, config, normalized_query) {
+            let best = result.result.score;
+            best_score = Some(best_score.map_or(best, |score| score.max(best)));
+            for (field, positions) in result.positions_by_field {
+                row.matches.add_positions(field, positions);
+            }
         }
     }
     match best_score {
@@ -207,6 +223,75 @@ fn apply_search(row: &mut Row, config: &Config, normalized_query: &str) -> bool 
             true
         }
         None => false,
+    }
+}
+
+struct CombinedMatch {
+    result: crate::search::MatchResult,
+    positions_by_field: Vec<(TemplateField, Vec<usize>)>,
+}
+
+fn match_combined_fields(
+    row: &Row,
+    config: &Config,
+    normalized_query: &str,
+) -> Option<CombinedMatch> {
+    let fields = config.row_format.search_fields();
+    if fields.len() < 2 {
+        return None;
+    }
+
+    let mut text = String::new();
+    let mut segments = Vec::with_capacity(fields.len());
+    let mut char_offset = 0;
+    for (index, field) in fields.iter().enumerate() {
+        if index > 0 {
+            text.push(' ');
+            char_offset += 1;
+        }
+        let value = field_text(row, *field);
+        let start = char_offset;
+        let len = value.chars().count();
+        text.push_str(&value);
+        char_offset += len;
+        segments.push((*field, start, len));
+    }
+
+    let normalized_text = text.to_lowercase();
+    let result = match_subsequence_lowercase(normalized_query, &normalized_text)?;
+    let mut positions_by_field = Vec::<(TemplateField, Vec<usize>)>::new();
+    for position in &result.positions {
+        let Some((field, start, _)) = segments
+            .iter()
+            .find(|(_, start, len)| position >= start && position < &(start + len))
+        else {
+            continue;
+        };
+        if let Some((_, positions)) = positions_by_field
+            .iter_mut()
+            .find(|(candidate, _)| candidate == field)
+        {
+            positions.push(position - start);
+        } else {
+            positions_by_field.push((*field, vec![position - start]));
+        }
+    }
+
+    Some(CombinedMatch {
+        result,
+        positions_by_field,
+    })
+}
+
+fn field_text<'a>(row: &'a Row, field: TemplateField) -> Cow<'a, str> {
+    match field {
+        TemplateField::Title => Cow::Borrowed(row.title.as_str()),
+        TemplateField::Dir => Cow::Borrowed(row.dir.as_str()),
+        TemplateField::Session => Cow::Borrowed(row.session.as_str()),
+        TemplateField::Tab => Cow::Borrowed(row.tab_name.as_str()),
+        TemplateField::Command => Cow::Borrowed(row.command.as_str()),
+        TemplateField::PaneId => Cow::Owned(row.pane.id.to_string()),
+        TemplateField::Progress | TemplateField::Icon => Cow::Borrowed(""),
     }
 }
 

@@ -99,6 +99,9 @@ Substring mode returns the contiguous matched character range.
   searchable automatically.
 - Matching is case-insensitive across UTF-8 text.
 - Match positions are tracked as character indices, not byte offsets.
+- Fuzzy matching is also performed across the visible searchable fields in
+  template order, allowing query characters to be separated by field
+  boundaries.
 - Matched characters use bold yellow foreground.
 - A row is included if any visible search field matches.
 - If the same row has matches in multiple fields, all visible matched segments

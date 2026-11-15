@@ -255,3 +255,32 @@ fn pane_id_is_searchable_when_the_template_contains_it() {
     assert_eq!(rows.rows[0].pane.id, 3);
     assert_eq!(rows.rows[0].matches.pane_id, vec![0]);
 }
+
+#[test]
+fn fuzzy_matches_can_span_adjacent_visible_fields() {
+    let mut world = World::default();
+    world.apply_snapshot(
+        vec![SessionInput {
+            name: "work".into(),
+            is_current: true,
+            connected_clients: 1,
+            tabs: vec![TabInput {
+                position: 0,
+                tab_id: 11,
+                name: "code".into(),
+                active: true,
+            }],
+            panes: PaneManifestInput {
+                panes: BTreeMap::from([(0, vec![pane(1, "worker 1", true, "task-0")])]),
+            },
+        }],
+        Vec::new(),
+    );
+    let config = config_with_format("{title}  {command}");
+
+    let rows = Rows::build(&world, &config, "10", &PaneValueCache::default());
+
+    assert_eq!(rows.rows.len(), 1);
+    assert_eq!(rows.rows[0].matches.title, vec![7]);
+    assert_eq!(rows.rows[0].matches.command, vec![5]);
+}

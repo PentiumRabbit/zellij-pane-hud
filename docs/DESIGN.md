@@ -105,9 +105,15 @@ struct MatchResult {
 }
 ```
 
-All visible fields are scored independently. A row is included when any
-searchable field matches. Its score is the best field score, and positions for
-every matching field are retained so the renderer can highlight each match.
+All visible fields are scored independently. For fuzzy mode, the searchable
+fields are also joined in template order and matched as one logical row. This
+allows a query such as `10` to match when `1` appears in the title and `0`
+appears in the command. Combined positions are mapped back to their original
+fields, so every matched segment is highlighted.
+
+A row is included when either a single field or the combined row matches. Its
+score is the best field/combined score, and positions for every matching field
+are retained.
 
 Rows sort by score descending, then by stable traversal order:
 

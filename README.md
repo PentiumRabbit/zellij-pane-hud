@@ -25,7 +25,7 @@ in the current or another live session.
 - Configurable row templates with title, relative directory, progress, icon,
   session, tab, command, and pane ID fields.
 - Template-scoped fuzzy or substring search. Hidden fields do not participate
-  in matching.
+  in matching. Fuzzy queries may span multiple visible fields.
 - UTF-8-safe match highlighting: matched characters are bold yellow.
 - Semantic colors for running, idle, exited, unknown, Codex, Claude, editors,
   and other commands.
