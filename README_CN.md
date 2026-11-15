@@ -88,7 +88,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
         }
     }
@@ -98,7 +97,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
             SwitchToMode "normal"
         }
@@ -106,13 +104,18 @@ keybinds {
 }
 ```
 
-`releases/latest/download` 会指向最新正式 Release。
-`skip_plugin_cache true` 会让每次新打开的插件解析并获取最新 WASM，而不是复用旧缓存。
+`releases/latest/download` 会指向最新正式 Release。推荐的更新策略是在新
+Zellij server 启动前运行一个轻量检查器：读取 GitHub 最新 Release 的资产摘要，
+删除 Zellij 缓存目录中不再对应的数字命名插件文件。插件首次打开时会下载当前
+版本，之后继续复用磁盘缓存，不需要每次重新编译。
+
+使用这种启动前检查策略时不需要 `skip_plugin_cache`。如果没有启动器检查，
+可以改用 `skip_plugin_cache true` 作为纯 Zellij 原生方案，但每次新打开插件都会
+重新下载和编译。需要固定版本时则使用明确版本 URL。
 
 已经打开的插件不会被热替换。要升级，先关闭插件，再按快捷键重新打开。
 
-如果更重视启动速度或需要固定版本，可以改用明确版本 URL，并移除
-`skip_plugin_cache`：
+固定版本示例：
 
 ```text
 https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.2/pane-switcher.wasm

@@ -161,7 +161,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
         }
     }
@@ -170,7 +169,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
@@ -178,12 +176,17 @@ keybinds {
 }
 ```
 
-The release URL automatically follows the latest published release.
-`skip_plugin_cache true` makes each newly opened plugin pane resolve and fetch
-that latest asset instead of reusing an older cached version; focusing an
-already open pane does not download it again. For the fastest startup or a
-fixed version, use a versioned release URL and remove `skip_plugin_cache`.
-To upgrade an already open pane, close it and launch it again.
+The release URL automatically follows the latest published release. The
+recommended update strategy runs a small launcher check before a new Zellij
+server starts: it reads GitHub's latest release asset digest and removes stale
+numeric plugin files from Zellij's download cache. The plugin then downloads
+the current asset on first use and reuses that cached copy afterward.
+
+No `skip_plugin_cache` is needed with that launcher strategy. Without a launcher
+check, `skip_plugin_cache true` is the native fallback but forces a remote
+download and compilation on every newly opened pane. Fixed installs can use a
+versioned release URL. To upgrade an already open plugin, close it and launch
+it again.
 For local development, replace the location with
 `file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm`.
 

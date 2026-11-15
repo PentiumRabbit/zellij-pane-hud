@@ -188,7 +188,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
         }
     }
@@ -197,7 +196,6 @@ keybinds {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
-                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
@@ -220,14 +218,20 @@ GitHub's `releases/latest/download` path resolves to the newest non-prerelease
 asset at fetch time. Zellij also caches loaded plugin artifacts, so a stable
 `latest` URL can otherwise continue using an older WASM file.
 
-`LaunchOrFocusPlugin` supports `skip_plugin_cache true`. It bypasses the memory
-and on-disk plugin cache for a newly launched pane, allowing the stable latest
-URL to fetch the current release. Focusing a live plugin does not reload it;
-users close and reopen the pane to update.
+The preferred startup strategy is an external launcher check before a new
+Zellij server starts. It queries GitHub's latest releases, reads their asset
+digests, and removes numeric files in Zellij's plugin download cache that do not
+match any current configured plugin. The next plugin launch downloads the
+latest HUD asset and subsequent launches reuse it.
 
-The tradeoff is remote resolution and compilation on each new launch.
-Versioned release URLs without cache bypass are preferable when deterministic
-startup is more important than automatic upgrades.
+`LaunchOrFocusPlugin` also supports `skip_plugin_cache true`. It bypasses memory
+and on-disk plugin caches for a newly launched pane, providing a native fallback
+when no startup checker exists. Its tradeoff is remote resolution and
+compilation on every new launch.
+
+Neither strategy hot-swaps a live plugin instance. Users close and reopen the
+pane to update. Versioned release URLs remain available when deterministic
+startup matters more than upgrades.
 
 ## Rendering research
 
