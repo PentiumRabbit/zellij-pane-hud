@@ -10,7 +10,7 @@ Status: implemented flat pane-template HUD.
 - search-first pane selection;
 - one line per terminal pane;
 - configurable row templates;
-- colored progress and command-category icons;
+- colored progress, command-category icons, and semantic text fields;
 - direct current-session and cross-session pane focus.
 
 It is not a permanent sidebar and does not render a session/tab tree.
@@ -69,6 +69,20 @@ Rules:
 - empty or invalid formats fall back to the default template;
 - search fields are derived from text placeholders in first-occurrence order;
 - `{progress}` and `{icon}` are visual fields and are not searchable.
+
+Text fields use semantic theme colors:
+
+| Field | Color |
+|---|---|
+| `{title}` | Cyan |
+| `{dir}` | Blue |
+| `{session}` | Magenta |
+| `{tab}` | Orange |
+| `{command}` | Green |
+| `{pane_id}` | Dark gray |
+
+Search matches override the field base color with bold yellow. The selected
+row background is layered underneath all field and match colors.
 
 Search corpus examples:
 
@@ -204,6 +218,10 @@ Width rules:
 - every row is padded to the exact inner width;
 - the search line keeps a width-safe query tail and cursor position.
 
+Template fields retain their semantic colors while selected. ANSI styling is
+applied only to visible rows, so field coloration does not rebuild rows or
+search state.
+
 The selected viewport starts at `selected + 1 - visible_rows` rather than
 walking all prior rows. A 10,000-row regression verifies bounded rendering.
 
@@ -297,6 +315,23 @@ Ctrl+Shift+e
 The configurable fallback path remains `Ctrl+o`, then `g`. `Ctrl+Space` and
 `Ctrl+g` conflicted with the local environment and are not registered.
 
+## Release and update strategy
+
+The published Zellij location uses:
+
+```text
+https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm
+```
+
+Zellij may reuse a cached WASM artifact even when the URL path remains stable.
+Launching with `skip_plugin_cache true` forces a newly opened plugin pane to
+resolve and compile the current latest release. Focusing an already running
+plugin reuses that instance, so users close and reopen it to apply an update.
+
+Versioned release URLs without `skip_plugin_cache` are available for
+reproducible installs and faster repeated launches. Local development uses
+`file:` locations instead.
+
 ## Error handling
 
 - Missing title: `pane <id>`.
@@ -317,6 +352,7 @@ Automated coverage includes:
 - UTF-8 fuzzy/substring positions;
 - template-scoped matching;
 - progress/category color semantics;
+- semantic field colors and selected-row layering;
 - match and selected-row styling layers;
 - Unicode width safety;
 - viewport bounds at 10,000 rows;

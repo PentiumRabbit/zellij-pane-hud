@@ -182,11 +182,22 @@ Implemented release path:
 
 ```kdl
 keybinds {
+    shared_except "locked" {
+        bind "Ctrl Shift e" {
+            SwitchToMode "normal"
+            LaunchOrFocusPlugin "pane-switcher" {
+                floating true
+                move_to_focused_tab true
+                skip_plugin_cache true
+            }
+        }
+    }
     session {
         bind "g" {
             LaunchOrFocusPlugin "pane-switcher" {
                 floating true
                 move_to_focused_tab true
+                skip_plugin_cache true
             }
             SwitchToMode "Normal"
         }
@@ -202,6 +213,21 @@ Ctrl+o, then g
 
 The final key stays visible and configurable in ordinary Zellij KDL. No
 background launcher, key interception, or normal-space hijacking is required.
+
+## Plugin update and cache research
+
+GitHub's `releases/latest/download` path resolves to the newest non-prerelease
+asset at fetch time. Zellij also caches loaded plugin artifacts, so a stable
+`latest` URL can otherwise continue using an older WASM file.
+
+`LaunchOrFocusPlugin` supports `skip_plugin_cache true`. It bypasses the memory
+and on-disk plugin cache for a newly launched pane, allowing the stable latest
+URL to fetch the current release. Focusing a live plugin does not reload it;
+users close and reopen the pane to update.
+
+The tradeoff is remote resolution and compilation on each new launch.
+Versioned release URLs without cache bypass are preferable when deterministic
+startup is more important than automatic upgrades.
 
 ## Rendering research
 
@@ -224,9 +250,11 @@ This keeps:
 
 Zellij's `Text` and `Table` components expose theme-relative emphasis levels,
 but only a small fixed set of semantic foregrounds. The HUD needs independent
-progress, command-category, directory, match, and selection colors. It
-therefore uses `ModeInfo.style.colors` to build a semantic ANSI palette while
-retaining Zellij as the source of truth for the active theme.
+progress, command-category, field, match, and selection colors. Text fields use
+cyan, blue, magenta, orange, green, and dark gray roles, while matched
+characters use bold yellow. It therefore uses `ModeInfo.style.colors` to build
+a semantic ANSI palette while retaining Zellij as the source of truth for the
+active theme.
 
 ## Performance findings
 
@@ -269,5 +297,6 @@ Regressions exercise:
 - No guaranteed live command/CWD details for other sessions.
 - No resurrectable session rows because they have no live pane target.
 - No nested split topology visualization.
+- An open plugin instance is not hot-swapped when a newer release appears.
 - Native floating-pane size only; width/height are not configurable through
   `LaunchOrFocusPlugin` in 0.45.1.

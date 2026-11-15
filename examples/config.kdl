@@ -1,4 +1,5 @@
-// Published automatically by the v* tag workflow.
+// The latest release is fetched whenever a new plugin pane is launched.
+// Publish updates by pushing a v* tag; close and reopen to replace a live pane.
 plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
@@ -10,7 +11,7 @@ plugins {
 }
 
 keybinds {
-    // Preferred direct shortcut.
+    // Preferred direct shortcut. skip_plugin_cache avoids stale remote plugins.
     shared_except "locked" {
         bind "Ctrl Shift e" {
             SwitchToMode "normal"

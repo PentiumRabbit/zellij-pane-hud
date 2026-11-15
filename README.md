@@ -181,6 +181,7 @@ The release URL automatically follows the latest published release.
 that latest asset instead of reusing an older cached version; focusing an
 already open pane does not download it again. For the fastest startup or a
 fixed version, use a versioned release URL and remove `skip_plugin_cache`.
+To upgrade an already open pane, close it and launch it again.
 For local development, replace the location with
 `file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm`.
 
