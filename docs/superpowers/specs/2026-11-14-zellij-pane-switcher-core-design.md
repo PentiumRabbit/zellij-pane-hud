@@ -71,9 +71,13 @@ polling loop.
 - no expansion state;
 - Left/Right produce `InputIntent::Ignored`;
 - default row format
-  `{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}`;
+  `{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}`;
 - text fields in `row_format` define the search corpus automatically;
-- `{dir}` is component-safe relative to the focused pane CWD.
+- `{dir}` is component-safe relative to the focused pane CWD and displays its
+  last `dir_depth` components;
+- `{tab_id}` exposes the stable numeric Zellij tab ID;
+- `{command}` displays its program basename and last `command_tail` arguments;
+- abbreviations retain the complete values in the search corpus.
 
 ## Search
 

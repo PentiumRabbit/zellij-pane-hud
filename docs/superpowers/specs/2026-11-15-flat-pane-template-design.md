@@ -32,15 +32,15 @@ order.
 The default format is:
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
 ```
 
 For example:
 
 ```text
-◓ ❉ fix search rendering  crates/pane-switcher-core  work/code  codex --full-auto  #3
-○ >_ zsh  .  work/shell  zsh  #7
-✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
+◓ ❉ 3-1 fix search rendering  pane-switcher-core  codex … --sandbox danger
+○ >_ 3-2 zsh  .  zsh
+✖ 󰈙 4-3 old editor  workspace  nvim notes.md
 ```
 
 The progress field is deliberately near the beginning so running state is easy
@@ -58,10 +58,11 @@ Supported fields:
 | `{progress}` | Colored running spinner, idle, exited, or unknown status |
 | `{icon}` | Colored pane/command type icon |
 | `{title}` | Pane title |
-| `{dir}` | Pane CWD relative to the focused pane's CWD |
+| `{dir}` | Last `dir_depth` components of the CWD relative to the focused pane's CWD |
 | `{session}` | Session name |
 | `{tab}` | Tab name |
-| `{command}` | Full cached foreground command, or initial command fallback |
+| `{tab_id}` | Stable numeric Zellij tab ID |
+| `{command}` | Program basename and the last `command_tail` command arguments |
 | `{pane_id}` | Numeric terminal pane ID |
 
 Rules:
@@ -72,6 +73,7 @@ Rules:
 - If parsing fails, the default format is used.
 - Search fields are derived from the placeholders present in the active
   template. Hidden fields do not participate in matching.
+- Directory and command abbreviations retain the full field values for search.
 - `{progress}` and `{icon}` are generated visual fields and do not contribute
   search text.
 
@@ -87,21 +89,27 @@ The base directory is the current focused pane's CWD.
 The calculation uses path components rather than string-prefix matching so
 `/work/app` is not treated as the parent of `/work/application`.
 
+Displayed relative, descendant, and absolute paths are abbreviated to their
+last `dir_depth` components. The default is two components.
+
+Commands display the executable basename followed by the last `command_tail`
+arguments. If arguments are omitted, `…` marks the gap. The default is two
+arguments. Full commands and directories remain searchable.
+
 ## Search and Highlighting
 
 Fuzzy mode returns both a score and the matched character positions.
 Substring mode returns the contiguous matched character range.
 
 - Only text fields present in `row_format` are searched. The default format
-  therefore searches title, relative directory, session, tab, command, and
-  pane ID.
+  therefore searches tab ID, pane ID, title, relative directory, and command.
 - Text fields added to the format, such as `{command}` or `{session}`, become
   searchable automatically.
 - Matching is case-insensitive across UTF-8 text.
 - Match positions are tracked as character indices, not byte offsets.
 - Fuzzy matching is also performed across the visible searchable fields in
   template order, allowing query characters to be separated by field
-  boundaries.
+  boundaries while preserving template literals such as `-`.
 - Matched characters use bold yellow foreground.
 - A row is included if any visible search field matches.
 - If the same row has matches in multiple fields, all visible matched segments
@@ -137,6 +145,27 @@ text color.
 Selected-row background spans the entire terminal width. State colors and match
 foregrounds remain visible on top of that background.
 
+Custom colors use one nested configuration block:
+
+```kdl
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
+```
+
+Ordinary child nodes are template-fragment rules. Rules are compiled against
+the parsed `row_format`, allowing a composite fragment to color its fields and
+literal separators. Longest matches take precedence; the later rule wins on
+equal length. Invalid color names and malformed rules fall back independently.
+Named colors map to the active Zellij theme. Fuzzy matches remain bold yellow.
+
 `{progress}` renders:
 
 - a four-frame cyan spinner while a foreground command is running;
@@ -151,7 +180,19 @@ foregrounds remain visible on top of that background.
 The active configuration becomes:
 
 ```kdl
-row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+dir_depth "2"
+command_tail "2"
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
 scope "all"                    // current | all
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring

@@ -5,28 +5,30 @@
 [![CI](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml)
 
 一个面向 Zellij 的浮动 Pane 搜索与切换器。每个终端 Pane 单独展示为一行，
-显示运行状态、类型图标、标题、相对目录、会话、Tab、命令和 Pane ID。
+显示运行状态、类型图标、Tab-Pane ID、标题、简写目录和简写命令。
 
 输入关键字即可模糊筛选，按 Enter 聚焦当前会话或其他活动会话中的 Pane。
 
 ```text
 FIND  ›
 ──────────────────────────────────────────────────────────────
-◓ ❉ src renderer  src/ui  work/code  codex --full-auto  #1
-○ >_ shell  .  work/shell  zsh  #2
-✖ 󰈙 old editor  workspace  work/logs  nvim notes.md  #3
+◓ ❉ 3-1 src renderer  src/ui  codex --full-auto
+○ >_ 3-2 shell  .  zsh
+✖ 󰈙 4-3 old editor  workspace  nvim notes.md
 ↑↓ move  Enter jump  Esc close
 ```
 
 ## 功能
 
 - 每个终端 Pane 一行，没有树形层级、折叠或详情面板。
-- 行模板可配置，可显示标题、相对目录、状态、图标、会话、Tab、命令和 ID。
+- 行模板可配置，可显示标题、相对目录、状态、图标、会话、Tab、Tab ID、命令和 Pane ID。
+- 目录和命令可配置简写级数，同时完整内容仍可搜索。
 - 搜索只匹配模板中可见的文字字段；模糊查询可以跨相邻字段匹配。
 - 可跳转到当前会话或其他活动会话中的终端 Pane。
 - 支持 UTF-8 安全匹配、高亮和 Unicode 显示宽度。
 - 支持 Nerd Font 图标和纯文本图标。
 - 跟随 Zellij 当前主题颜色。
+- 支持嵌套覆盖模板片段和进度状态颜色。
 - 搜索行、进度图标、类型图标、字段和选中背景使用不同的语义颜色。
 - 渲染只处理当前视口，不会为所有行生成终端输出。
 - 搜索行缓存会复用于选择移动、重新渲染和动画帧。
@@ -34,7 +36,7 @@ FIND  ›
 ## 默认行
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
 ```
 
 支持的模板字段：
@@ -44,10 +46,11 @@ FIND  ›
 | `{progress}` | 运行、空闲、已退出或未知状态 |
 | `{icon}` | Pane 或命令类型图标 |
 | `{title}` | Pane 标题；为空时显示 `pane <id>` |
-| `{dir}` | 相对于当前聚焦 Pane 的目录 |
+| `{dir}` | 相对于当前聚焦 Pane 的目录，默认只显示最后两级 |
 | `{session}` | 活动会话名称 |
 | `{tab}` | Tab 名称 |
-| `{command}` | 缓存的前台命令或初始命令 |
+| `{tab_id}` | Zellij 内部稳定 Tab ID |
+| `{command}` | 程序名和最后两个命令参数 |
 | `{pane_id}` | 数字 Pane ID |
 
 默认字段颜色：
@@ -59,11 +62,33 @@ FIND  ›
 | `{session}` | 洋红色 |
 | `{tab}` | 橙色 |
 | `{command}` | 绿色 |
-| `{pane_id}` | 暗灰色 |
+| `{tab_id}` / `{pane_id}` | 暗灰色 |
+
+可以用统一的嵌套 `colors` 块覆盖模板片段和进度状态颜色：
+
+```kdl
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
+```
+
+片段规则按完整模板部件匹配，因此 `"{tab_id}-{pane_id}"` 会连同中间的 `-`
+一起着色。重叠规则以最长匹配优先，长度相同时后配置的规则优先。支持的主题色名：
+`default`、`gray`、`green`、`cyan`、`magenta`、`orange`、`blue`、`red`、
+`yellow`、`dark-gray`、`border`。无效颜色只回退对应项。
 
 搜索命中的字符使用粗体黄色。选中行保留完整背景，同时保留字段颜色。
 
 只有当前模板中的文字字段会参与搜索。例如去掉 `{dir}` 后，目录就不会再被匹配。
+目录和命令虽然会简写显示，完整值仍然参与搜索。
+跨字段搜索会保留模板中的分隔符，因此默认格式可以直接搜索 `3-7`。
 `{{` 和 `}}` 可以输出字面量花括号；未知或未闭合的模板字段会按普通文字处理。
 
 ## 安装与 Zellij 配置
@@ -74,7 +99,19 @@ FIND  ›
 plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
-        row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+        row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+        dir_depth "2"
+        command_tail "2"
+        colors {
+            "{title}" "red"
+            "{tab_id}-{pane_id}" "yellow"
+            progress {
+                running "red"
+                idle "yellow"
+                exited "green"
+                unknown "red"
+            }
+        }
         icons "nerd"
         search_mode "fuzzy"
         spinner_fps "4"
@@ -150,7 +187,19 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 
 ```kdl
 scope "all"                    // current | all
-row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+dir_depth "2"                  // 目录显示级数
+command_tail "2"               // 命令尾部显示参数数
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
 spinner_fps "4"
@@ -159,6 +208,8 @@ follow_current_session "true"
 
 - `scope`：只搜索当前会话，或搜索所有活动会话。
 - `row_format`：控制显示顺序和搜索字段。
+- `dir_depth`：目录最多显示最后几级，默认 `2`。
+- `command_tail`：命令保留程序名后再显示最后几个参数，默认 `2`。
 - `icons`：Nerd Font 图标或纯文本图标。
 - `search_mode`：模糊匹配或连续子串匹配。
 - `spinner_fps`：运行状态动画刷新频率。

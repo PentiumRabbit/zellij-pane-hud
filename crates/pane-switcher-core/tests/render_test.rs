@@ -19,7 +19,9 @@ fn row(id: u32, title: &str, dir: &str, command: &str) -> Row {
         tab_position: 0,
         title: title.into(),
         dir: dir.into(),
+        full_dir: dir.into(),
         command: command.into(),
+        full_command: command.into(),
         pane: LivePane {
             key,
             id,
@@ -68,6 +70,10 @@ fn progress_and_type_icons_use_semantic_colors() {
 
 #[test]
 fn row_fields_use_distinct_semantic_colors() {
+    let config = Config::from_map(&BTreeMap::from([(
+        "row_format".into(),
+        "{title} {dir} {session} {tab} {tab_id} {pane_id} {command}".into(),
+    )]));
     let mut shell = row(1, "src renderer", "src/ui", "zsh");
     shell.progress = ProgressState::Idle;
     let rows = Rows { rows: vec![shell] };
@@ -77,7 +83,7 @@ fn row_fields_use_distinct_semantic_colors() {
         80,
         12,
         "",
-        &Config::default(),
+        &config,
         0,
         RenderOptions::default(),
     );
@@ -87,12 +93,17 @@ fn row_fields_use_distinct_semantic_colors() {
     assert!(rendered.contains("\u{1b}[38;5;75msrc/ui\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;201mwork\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;208mcode\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;240m11\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;46mzsh\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;240m1\u{1b}[0m"));
 }
 
 #[test]
 fn selected_rows_keep_field_colors_over_the_selection_background() {
+    let config = Config::from_map(&BTreeMap::from([(
+        "row_format".into(),
+        "{title} {dir} {session} {tab} {tab_id} {pane_id} {command}".into(),
+    )]));
     let mut shell = row(1, "src renderer", "src/ui", "zsh");
     shell.progress = ProgressState::Idle;
     let rows = Rows { rows: vec![shell] };
@@ -102,7 +113,7 @@ fn selected_rows_keep_field_colors_over_the_selection_background() {
         80,
         12,
         "",
-        &Config::default(),
+        &config,
         0,
         RenderOptions::default(),
     );
@@ -112,8 +123,142 @@ fn selected_rows_keep_field_colors_over_the_selection_background() {
     assert!(rendered.contains("\u{1b}[38;5;75;48;5;24msrc/ui\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;201;48;5;24mwork\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;208;48;5;24mcode\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;240;48;5;24m11\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;46;48;5;24mzsh\u{1b}[0m"));
     assert!(rendered.contains("\u{1b}[38;5;240;48;5;24m1\u{1b}[0m"));
+}
+
+#[test]
+fn nested_colors_style_template_fragments() {
+    let config = Config::from_map(&BTreeMap::from([
+        (
+            "row_format".into(),
+            "{title}  {tab_id}-{pane_id}  {dir}".into(),
+        ),
+        (
+            "colors".into(),
+            r#""{title}" "red"
+"{tab_id}-{pane_id}" "yellow""#
+                .into(),
+        ),
+    ]));
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex")],
+    };
+    let frame = render_frame(
+        &rows,
+        None,
+        80,
+        12,
+        "",
+        &config,
+        0,
+        RenderOptions::default(),
+    );
+    let rendered = &frame.lines[2];
+
+    assert!(rendered.contains("\u{1b}[38;5;196msrc renderer\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;226m11-1\u{1b}[0m"));
+}
+
+#[test]
+fn nested_progress_colors_are_selected_by_state() {
+    let config = Config::from_map(&BTreeMap::from([
+        ("row_format".into(), "{progress} {title}".into()),
+        (
+            "colors".into(),
+            r#"progress {
+    running "green"
+    idle "yellow"
+    exited "red"
+    unknown "magenta"
+}"#
+            .into(),
+        ),
+    ]));
+    let mut idle = row(2, "idle", ".", "zsh");
+    idle.progress = ProgressState::Idle;
+    let mut exited = row(3, "exited", ".", "zsh");
+    exited.progress = ProgressState::Exited;
+    let mut unknown = row(4, "unknown", ".", "?");
+    unknown.progress = ProgressState::Unknown;
+    let rows = Rows {
+        rows: vec![row(1, "running", ".", "codex"), idle, exited, unknown],
+    };
+    let frame = render_frame(
+        &rows,
+        None,
+        60,
+        12,
+        "",
+        &config,
+        0,
+        RenderOptions::default(),
+    );
+
+    assert!(frame.lines[2].contains("\u{1b}[38;5;46m◐\u{1b}[0m"));
+    assert!(frame.lines[3].contains("\u{1b}[38;5;226m○\u{1b}[0m"));
+    assert!(frame.lines[4].contains("\u{1b}[38;5;196m✖\u{1b}[0m"));
+    assert!(frame.lines[5].contains("\u{1b}[38;5;201m?\u{1b}[0m"));
+}
+
+#[test]
+fn color_rules_prefer_the_longest_match_and_ignore_invalid_values() {
+    let config = Config::from_map(&BTreeMap::from([
+        ("row_format".into(), "{tab_id}-{pane_id}  {title}".into()),
+        (
+            "colors".into(),
+            r#""{tab_id}" "red"
+"{tab_id}-{pane_id}" "yellow"
+"{title}" "not-a-color""#
+                .into(),
+        ),
+    ]));
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex")],
+    };
+    let frame = render_frame(
+        &rows,
+        None,
+        60,
+        12,
+        "",
+        &config,
+        0,
+        RenderOptions::default(),
+    );
+    let rendered = &frame.lines[2];
+
+    assert!(rendered.contains("\u{1b}[38;5;226m11-1\u{1b}[0m"));
+    assert!(rendered.contains("\u{1b}[38;5;51msrc renderer\u{1b}[0m"));
+}
+
+#[test]
+fn equally_specific_color_rules_use_the_later_definition() {
+    let config = Config::from_map(&BTreeMap::from([
+        ("row_format".into(), "{title}".into()),
+        (
+            "colors".into(),
+            r#""{title}" "red"
+"{title}" "green""#
+                .into(),
+        ),
+    ]));
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex")],
+    };
+    let frame = render_frame(
+        &rows,
+        None,
+        60,
+        12,
+        "",
+        &config,
+        0,
+        RenderOptions::default(),
+    );
+
+    assert!(frame.lines[2].contains("\u{1b}[38;5;46msrc renderer\u{1b}[0m"));
 }
 
 #[test]
@@ -251,9 +396,60 @@ fn default_row_shows_all_pane_information() {
 
     assert!(frame.lines[2].contains("src renderer"));
     assert!(frame.lines[2].contains("src/ui"));
-    assert!(frame.lines[2].contains("work/code"));
+    assert!(frame.lines[2].contains("11-1"));
     assert!(frame.lines[2].contains("codex --full-auto"));
-    assert!(frame.lines[2].contains("#1"));
+}
+
+#[test]
+fn default_row_uses_compact_tab_and_pane_id_before_the_title() {
+    let rows = Rows {
+        rows: vec![row(1, "src renderer", "src/ui", "codex --full-auto")],
+    };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        120,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+
+    assert!(frame.lines[2].contains("11-1  src renderer"));
+    assert!(!frame.lines[2].contains("work/code"));
+    assert!(!frame.lines[2].contains("#1"));
+}
+
+#[test]
+fn long_command_does_not_hide_the_pane_id() {
+    let rows = Rows {
+        rows: vec![row(
+            1,
+            "app",
+            ".",
+            "codex --full-auto --model gpt-5 --sandbox danger --very-long-argument",
+        )],
+    };
+    let frame = render_frame(
+        &rows,
+        Some(0),
+        80,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+
+    assert!(frame.lines[2].contains("11-1"));
+    assert!(frame.lines[2].contains("codex"));
 }
 
 #[test]

@@ -8,5 +8,6 @@ license = "MIT"
 rust-version = "1.93"
 
 [workspace.dependencies]
+kdl = "4.7.1"
 unicode-width = "0.2.2"
 zellij-tile = "0.45.1"

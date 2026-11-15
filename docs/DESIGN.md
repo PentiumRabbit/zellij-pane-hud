@@ -32,15 +32,15 @@ Selection is restored by stable session/tab/pane identity across row rebuilds.
 ## Default row
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
 ```
 
 Example:
 
 ```text
-◓ ❉ fix search rendering  crates/pane-switcher-core  work/code  codex --full-auto  #3
-○ >_ zsh  .  work/shell  zsh  #7
-✖ 󰈙 old editor  workspace  work/docs  nvim notes.md  #8
+◓ ❉ 3-1 fix search rendering  pane-switcher-core  codex … --sandbox danger
+○ >_ 3-2 zsh  .  zsh
+✖ 󰈙 4-3 old editor  workspace  nvim notes.md
 ```
 
 Progress comes first so running state is the easiest attribute to scan.
@@ -54,10 +54,11 @@ The template is parsed once at plugin load into literal and field parts.
 | `{progress}` | Running spinner, idle, exited, or unknown progress |
 | `{icon}` | Pane or command category icon |
 | `{title}` | Pane title, or `pane <id>` when empty |
-| `{dir}` | CWD relative to the focused pane CWD |
+| `{dir}` | Last `dir_depth` components of the CWD relative to the focused pane CWD |
 | `{session}` | Live session name |
 | `{tab}` | Tab name |
-| `{command}` | Full cached foreground command or initial fallback |
+| `{tab_id}` | Stable numeric Zellij tab ID |
+| `{command}` | Program basename and the last `command_tail` arguments |
 | `{pane_id}` | Numeric terminal pane ID |
 
 Rules:
@@ -68,7 +69,8 @@ Rules:
 - unterminated placeholders remain literal;
 - empty or invalid formats fall back to the default template;
 - search fields are derived from text placeholders in first-occurrence order;
-- `{progress}` and `{icon}` are visual fields and are not searchable.
+- `{progress}` and `{icon}` are visual fields and are not searchable;
+- abbreviated directory and command values retain their full searchable text.
 
 Text fields use semantic theme colors:
 
@@ -79,19 +81,43 @@ Text fields use semantic theme colors:
 | `{session}` | Magenta |
 | `{tab}` | Orange |
 | `{command}` | Green |
-| `{pane_id}` | Dark gray |
+| `{tab_id}` / `{pane_id}` | Dark gray |
 
 Search matches override the field base color with bold yellow. The selected
 row background is layered underneath all field and match colors.
 
+The built-in colors can be overridden with one nested `colors` block:
+
+```kdl
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
+```
+
+Fragment rules match complete sequences of parsed template parts, so a
+composite rule colors both fields and intervening literals. Longest matches win;
+the later definition wins when lengths are equal. Invalid colors fall back to
+the corresponding built-in field or progress color. Search highlighting remains
+bold yellow.
+
 Search corpus examples:
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
-                                         -> title, dir, session, tab, command, pane_id
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
+                                         -> tab_id, pane_id, title, dir, command
 {icon} {session}/{tab} {title}         -> session, tab, title
 {progress} {title} {command}           -> title, command
 ```
+
+Cross-field fuzzy matching preserves the literals in `row_format`. The default
+format therefore allows a query such as `3-7` to match the tab-pane pair.
 
 ## Relative directories
 
@@ -103,6 +129,19 @@ path is under base       relative path
 path outside base        absolute path
 missing path             ?
 ```
+
+Relative, absolute, and descendant paths are abbreviated to their last
+`dir_depth` components for display. The full CWD remains searchable.
+
+Commands use the executable basename followed by the last `command_tail`
+arguments. When arguments are omitted, a single ellipsis marks the gap:
+
+```text
+codex --full-auto --model gpt-5 --sandbox danger
+  -> codex … --sandbox danger
+```
+
+The full command remains searchable.
 
 Comparison uses path components through `Path::strip_prefix`, so
 `/work/app` is not treated as the parent of `/work/application`.
@@ -294,7 +333,19 @@ their rows still support structural search and pane navigation.
 
 ```kdl
 scope "all"                    // current | all
-row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+dir_depth "2"                  // path components to display
+command_tail "2"               // trailing command arguments to display
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
 spinner_fps "4"

@@ -1,5 +1,6 @@
 use unicode_width::UnicodeWidthStr;
 
+use crate::color::ProgressColors;
 use crate::config::{Config, IconsMode};
 use crate::icons::{classify_command, icon_for, PaneVisualState};
 use crate::rows::{ProgressState, Row, Rows};
@@ -82,26 +83,33 @@ pub fn render_frame(
 
 fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
     let mut spans = Vec::new();
-    for part in config.row_format.parts() {
+    for (part_index, part) in config.row_format.parts().iter().enumerate() {
+        let part_color = config.colors.part_color(part_index);
         match part {
             crate::template::TemplatePart::Literal(text) => {
-                push_span(&mut spans, text.clone(), ForegroundColor::Default, false);
+                push_span(
+                    &mut spans,
+                    text.clone(),
+                    part_color.unwrap_or(ForegroundColor::Default),
+                    false,
+                );
             }
             crate::template::TemplatePart::Field(field) => match field {
                 TemplateField::Progress => {
-                    let (glyph, color) = progress_glyph(row.progress, spinner_tick);
+                    let (glyph, color) =
+                        progress_glyph(row.progress, spinner_tick, &config.colors.progress);
                     push_span(&mut spans, glyph.to_owned(), color, false);
                 }
                 TemplateField::Icon => {
                     let (glyph, color) = type_icon(row, config.icons);
-                    push_span(&mut spans, glyph, color, false);
+                    push_span(&mut spans, glyph, part_color.unwrap_or(color), false);
                 }
                 TemplateField::Title => {
                     push_matched_text(
                         &mut spans,
                         &row.title,
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
                 TemplateField::Dir => {
@@ -109,7 +117,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.dir,
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
                 TemplateField::Session => {
@@ -117,7 +125,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.session,
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
                 TemplateField::Tab => {
@@ -125,7 +133,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.tab_name,
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
                 TemplateField::Command => {
@@ -133,7 +141,16 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.command,
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
+                    );
+                }
+                TemplateField::TabId => {
+                    let tab_id = row.key.tab_id().unwrap_or_default().to_string();
+                    push_matched_text(
+                        &mut spans,
+                        &tab_id,
+                        row.matches.get(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
                 TemplateField::PaneId => {
@@ -141,7 +158,7 @@ fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {
                         &mut spans,
                         &row.pane.id.to_string(),
                         row.matches.get(*field),
-                        field_color(*field),
+                        part_color.unwrap_or(field_color(*field)),
                     );
                 }
             },
@@ -157,12 +174,16 @@ fn field_color(field: TemplateField) -> ForegroundColor {
         TemplateField::Session => ForegroundColor::Magenta,
         TemplateField::Tab => ForegroundColor::Orange,
         TemplateField::Command => ForegroundColor::Green,
-        TemplateField::PaneId => ForegroundColor::DarkGray,
+        TemplateField::TabId | TemplateField::PaneId => ForegroundColor::DarkGray,
         TemplateField::Progress | TemplateField::Icon => ForegroundColor::Default,
     }
 }
 
-fn progress_glyph(state: ProgressState, spinner_tick: u64) -> (&'static str, ForegroundColor) {
+fn progress_glyph(
+    state: ProgressState,
+    spinner_tick: u64,
+    colors: &ProgressColors,
+) -> (&'static str, ForegroundColor) {
     match state {
         ProgressState::Running => (
             match spinner_tick % 4 {
@@ -171,16 +192,16 @@ fn progress_glyph(state: ProgressState, spinner_tick: u64) -> (&'static str, For
                 2 => "◑",
                 _ => "◒",
             },
-            ForegroundColor::Cyan,
+            colors.running,
         ),
-        ProgressState::Idle => ("○", ForegroundColor::Gray),
-        ProgressState::Exited => ("✖", ForegroundColor::Red),
-        ProgressState::Unknown => ("?", ForegroundColor::DarkGray),
+        ProgressState::Idle => ("○", colors.idle),
+        ProgressState::Exited => ("✖", colors.exited),
+        ProgressState::Unknown => ("?", colors.unknown),
     }
 }
 
 fn type_icon(row: &Row, mode: IconsMode) -> (String, ForegroundColor) {
-    let state = if row.command.trim().is_empty() || row.command.trim() == "?" {
+    let state = if row.full_command.trim().is_empty() || row.full_command.trim() == "?" {
         if row.pane.is_focused {
             PaneVisualState::Focused
         } else if row.pane.is_suppressed {
@@ -194,7 +215,7 @@ fn type_icon(row: &Row, mode: IconsMode) -> (String, ForegroundColor) {
         }
     } else {
         let command = row
-            .command
+            .full_command
             .split_whitespace()
             .map(str::to_owned)
             .collect::<Vec<_>>();

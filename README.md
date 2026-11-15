@@ -5,8 +5,8 @@
 [![CI](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml)
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
-one compact row with progress, command type, title, relative directory,
-session/tab, full command, and pane ID.
+one compact row with progress, command type, tab-pane ID, title, abbreviated
+directory, and abbreviated command.
 
 Type to fuzzy-filter the pane list, then press Enter to focus the selected pane
 in the current or another live session.
@@ -15,9 +15,9 @@ in the current or another live session.
 ╭─ FIND ───────────────────────────────────────────────╮
 │ › sr                                          Esc   │
 ├──────────────────────────────────────────────────────┤
-│ ◓ ❉ src renderer  src/ui  work/code  codex --full-auto  #1 │
-│ ○ 󰈙 editor notes  workspace/notes  work/code  nvim  #2      │
-│ ✖ >_ old shell  /tmp/elsewhere  work/logs  zsh  #3           │
+│ ◓ ❉ 3-1 src renderer  src/ui  codex --full-auto │
+│ ○ 󰈙 3-2 editor notes  workspace/notes  nvim      │
+│ ✖ >_ 4-3 old shell  tmp/elsewhere  zsh           │
 │ ↑↓ move  Enter jump  Esc close                      │
 ╰──────────────────────────────────────────────────────╯
 ```
@@ -27,7 +27,9 @@ in the current or another live session.
 - One terminal pane per row; no session/tab hierarchy, folding, or detail
   panel.
 - Configurable row templates with title, relative directory, progress, icon,
-  session, tab, command, and pane ID fields.
+  session, tab, tab ID, command, and pane ID fields.
+- Configurable directory and command abbreviation while retaining full-text
+  search.
 - Template-scoped fuzzy or substring search. Hidden fields do not participate
   in matching. Fuzzy queries may span multiple visible fields.
 - UTF-8-safe match highlighting: matched characters are bold yellow.
@@ -35,6 +37,7 @@ in the current or another live session.
   and other commands.
 - Field-specific colors for titles, directories, sessions, tabs, commands, and
   pane IDs while keeping fuzzy matches bold yellow.
+- Nested template-fragment and progress-state color overrides.
 - Colors follow the active Zellij theme through `ModeUpdate` and
   `ModeInfo.style.colors`.
 - Full-width theme-selected row background while preserving icon and match
@@ -48,7 +51,7 @@ in the current or another live session.
 ## Default row
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
 ```
 
 Supported fields:
@@ -58,15 +61,19 @@ Supported fields:
 | `{progress}` | Colored running, idle, exited, or unknown indicator |
 | `{icon}` | Colored pane or command category icon |
 | `{title}` | Pane title, falling back to `pane <id>` |
-| `{dir}` | Pane CWD relative to the focused pane CWD |
+| `{dir}` | Last two components of the pane CWD relative to the focused pane CWD |
 | `{session}` | Live session name |
 | `{tab}` | Tab name |
-| `{command}` | Cached foreground command or initial-command fallback |
+| `{tab_id}` | Stable Zellij tab ID |
+| `{command}` | Program basename and the last two command arguments |
 | `{pane_id}` | Numeric terminal pane ID |
 
 Only text fields present in the active format are searchable. The complete
-default format therefore searches title, relative directory, session, tab,
-command, and pane ID. Removing a field also removes it from the search corpus.
+default format therefore searches tab ID, pane ID, title, relative directory,
+and command. Removing a field also removes it from the search corpus.
+Abbreviated directories and commands remain fully searchable. Cross-field
+matching preserves visible literals, so `3-7` matches the default `tab-pane`
+pair.
 
 `{{` and `}}` emit literal braces. Unknown or unterminated placeholders remain
 literal. An empty format falls back to the default.
@@ -74,16 +81,42 @@ literal. An empty format falls back to the default.
 More examples:
 
 ```text
-{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}
+{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}
 {icon} {session}/{tab} {title}  {dir}  {command}
 {progress} {title} [{dir}]
 ```
 
+Override template fragments and progress states with one nested `colors` block:
+
+```kdl
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
+```
+
+Fragment rules align with complete template parts, so
+`"{tab_id}-{pane_id}"` colors the IDs and the hyphen together. The longest
+matching rule wins; equal-length rules use the later definition. Supported
+theme colors are `default`, `gray`, `green`, `cyan`, `magenta`, `orange`,
+`blue`, `red`, `yellow`, `dark-gray`, and `border`. Invalid colors fall back to
+the built-in colors independently.
+
+Search matches override the field base color with bold yellow. The selected
+row background is layered underneath all field and match colors.
+
 `{dir}` uses path components, not string prefixes:
 
 - equal to the focused pane CWD: `.`;
-- a descendant: the relative path;
-- an unrelated or sibling-prefix path: the absolute path;
+- a descendant: the relative path, abbreviated to `dir_depth` components;
+- an unrelated or sibling-prefix path: the absolute path, abbreviated to
+  `dir_depth` components;
 - unavailable: `?`.
 
 For example, `/work/app` is not treated as the parent of
@@ -147,7 +180,19 @@ keeps `Ctrl+o`, then `g` as a fallback.
 plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
-        row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+        row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+        dir_depth "2"
+        command_tail "2"
+        colors {
+            "{title}" "red"
+            "{tab_id}-{pane_id}" "yellow"
+            progress {
+                running "red"
+                idle "yellow"
+                exited "green"
+                unknown "red"
+            }
+        }
         icons "nerd"
         search_mode "fuzzy"
         spinner_fps "4"
@@ -221,7 +266,19 @@ Unknown keys are ignored. Invalid values fall back per field.
 
 ```kdl
 scope "all"                    // current | all
-row_format "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+dir_depth "2"                  // path components to display
+command_tail "2"               // trailing arguments to display
+colors {
+    "{title}" "red"
+    "{tab_id}-{pane_id}" "yellow"
+    progress {
+        running "red"
+        idle "yellow"
+        exited "green"
+        unknown "red"
+    }
+}
 icons "nerd"                   // nerd | plain
 search_mode "fuzzy"            // fuzzy | substring
 spinner_fps "4"

@@ -138,7 +138,7 @@ fn relative_dir_handles_equal_descendant_and_sibling_prefix_paths() {
         .map(|row| row.dir.as_str())
         .collect::<Vec<_>>();
 
-    assert_eq!(dirs, vec![".", "src", "/work/application", "?"]);
+    assert_eq!(dirs, vec![".", "src", "work/application", "?"]);
 }
 
 #[test]
@@ -216,6 +216,155 @@ fn rows_fill_display_values_and_progress_state() {
 }
 
 #[test]
+fn directory_display_keeps_only_the_last_two_components() {
+    let mut values = PaneValueCache::default();
+    values.set_cwd("work", 1, PathBuf::from("/work/app"));
+    values.set_cwd(
+        "work",
+        2,
+        PathBuf::from("/work/app/src/components/widgets/button"),
+    );
+
+    let rows = Rows::build(&fixture(), &Config::default(), "", &values);
+    let row = rows
+        .rows
+        .iter()
+        .find(|row| row.pane.id == 2)
+        .expect("pane row");
+
+    assert_eq!(row.dir, "widgets/button");
+}
+
+#[test]
+fn command_display_keeps_program_and_last_two_arguments() {
+    let mut values = PaneValueCache::default();
+    values.set_command(
+        "work",
+        2,
+        vec![
+            "/usr/local/bin/codex".into(),
+            "--full-auto".into(),
+            "--model".into(),
+            "gpt-5".into(),
+            "--sandbox".into(),
+            "danger".into(),
+        ],
+    );
+
+    let rows = Rows::build(&fixture(), &Config::default(), "", &values);
+    let row = rows
+        .rows
+        .iter()
+        .find(|row| row.pane.id == 2)
+        .expect("pane row");
+
+    assert_eq!(row.command, "codex … --sandbox danger");
+}
+
+#[test]
+fn abbreviation_depths_are_configurable() {
+    let config = Config::from_map(&BTreeMap::from([
+        ("dir_depth".into(), "3".into()),
+        ("command_tail".into(), "1".into()),
+    ]));
+    let mut values = PaneValueCache::default();
+    values.set_cwd("work", 1, PathBuf::from("/work/app"));
+    values.set_cwd(
+        "work",
+        2,
+        PathBuf::from("/work/app/src/components/widgets/button"),
+    );
+    values.set_command(
+        "work",
+        2,
+        vec![
+            "codex".into(),
+            "--full-auto".into(),
+            "--model".into(),
+            "gpt-5".into(),
+            "danger".into(),
+        ],
+    );
+
+    let rows = Rows::build(&fixture(), &config, "", &values);
+    let row = rows
+        .rows
+        .iter()
+        .find(|row| row.pane.id == 2)
+        .expect("pane row");
+
+    assert_eq!(row.dir, "components/widgets/button");
+    assert_eq!(row.command, "codex … danger");
+}
+
+#[test]
+fn invalid_abbreviation_values_use_two_level_defaults() {
+    let config = Config::from_map(&BTreeMap::from([
+        ("dir_depth".into(), "0".into()),
+        ("command_tail".into(), "not-a-number".into()),
+    ]));
+    let mut values = PaneValueCache::default();
+    values.set_cwd("work", 1, PathBuf::from("/work/app"));
+    values.set_cwd(
+        "work",
+        2,
+        PathBuf::from("/work/app/src/components/widgets/button"),
+    );
+    values.set_command(
+        "work",
+        2,
+        vec![
+            "codex".into(),
+            "--full-auto".into(),
+            "--model".into(),
+            "gpt-5".into(),
+            "--sandbox".into(),
+            "danger".into(),
+        ],
+    );
+
+    let rows = Rows::build(&fixture(), &config, "", &values);
+    let row = rows
+        .rows
+        .iter()
+        .find(|row| row.pane.id == 2)
+        .expect("pane row");
+
+    assert_eq!(row.dir, "widgets/button");
+    assert_eq!(row.command, "codex … --sandbox danger");
+}
+
+#[test]
+fn abbreviated_dir_and_command_values_remain_searchable() {
+    let mut values = PaneValueCache::default();
+    values.set_cwd("work", 1, PathBuf::from("/work/app"));
+    values.set_cwd(
+        "work",
+        2,
+        PathBuf::from("/work/app/hidden-prefix/widgets/button"),
+    );
+    values.set_command(
+        "work",
+        2,
+        vec![
+            "codex".into(),
+            "--hidden-middle".into(),
+            "--model".into(),
+            "--sandbox".into(),
+            "danger".into(),
+        ],
+    );
+
+    let dir_rows = Rows::build(&fixture(), &Config::default(), "hidden-prefix", &values);
+    let command_rows = Rows::build(&fixture(), &Config::default(), "--hidden-middle", &values);
+
+    assert_eq!(dir_rows.rows.len(), 1);
+    assert_eq!(dir_rows.rows[0].pane.id, 2);
+    assert_eq!(command_rows.rows.len(), 1);
+    assert_eq!(command_rows.rows[0].pane.id, 2);
+}
+
+#[test]
 fn results_sort_by_best_field_score_then_stable_traversal_order() {
     let config = config_with_format("{title}");
     let rows = Rows::build(&fixture(), &config, "test", &PaneValueCache::default());
@@ -254,6 +403,16 @@ fn pane_id_is_searchable_when_the_template_contains_it() {
     assert_eq!(rows.rows.len(), 1);
     assert_eq!(rows.rows[0].pane.id, 3);
     assert_eq!(rows.rows[0].matches.pane_id, vec![0]);
+}
+
+#[test]
+fn tab_id_and_pane_id_are_searchable_with_their_visible_separator() {
+    let config = config_with_format("{tab_id}-{pane_id}  {title}");
+
+    let rows = Rows::build(&fixture(), &config, "11-1", &PaneValueCache::default());
+
+    assert_eq!(rows.rows.len(), 1);
+    assert_eq!(rows.rows[0].pane.id, 1);
 }
 
 #[test]

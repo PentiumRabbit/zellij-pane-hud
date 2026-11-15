@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::color::ColorConfig;
 use crate::template::RowTemplate;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -67,6 +68,9 @@ pub struct Config {
     pub height: String,
     pub search_mode: SearchMode,
     pub spinner_fps: u8,
+    pub dir_depth: usize,
+    pub command_tail: usize,
+    pub colors: ColorConfig,
     pub row_format: RowTemplate,
 }
 
@@ -93,6 +97,9 @@ impl Default for Config {
             height: "68%".to_owned(),
             search_mode: SearchMode::Fuzzy,
             spinner_fps: 4,
+            dir_depth: 2,
+            command_tail: 2,
+            colors: ColorConfig::default(),
             row_format: RowTemplate::default(),
         }
     }
@@ -145,10 +152,25 @@ impl Config {
         {
             config.spinner_fps = fps.clamp(1, 30);
         }
+        if let Some(depth) = values
+            .get("dir_depth")
+            .and_then(|value| parse_positive_usize(value))
+        {
+            config.dir_depth = depth;
+        }
+        if let Some(tail) = values
+            .get("command_tail")
+            .and_then(|value| parse_positive_usize(value))
+        {
+            config.command_tail = tail;
+        }
         if let Some(format) = values.get("row_format") {
             if !format.trim().is_empty() {
                 config.row_format = RowTemplate::parse(format);
             }
+        }
+        if let Some(colors) = values.get("colors") {
+            config.colors = ColorConfig::parse(colors, &config.row_format);
         }
 
         config
@@ -178,6 +200,14 @@ fn parse_bool(value: &str) -> Option<bool> {
         "false" => Some(false),
         _ => None,
     }
+}
+
+fn parse_positive_usize(value: &str) -> Option<usize> {
+    value
+        .trim()
+        .parse::<usize>()
+        .ok()
+        .filter(|value| *value > 0)
 }
 
 fn parse_scope(value: &str) -> Option<Scope> {

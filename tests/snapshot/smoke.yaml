@@ -2,7 +2,18 @@ name: smoke
 plugin: ../../dist/pane-switcher.wasm
 config:
   icons: nerd
-  row_format: "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}"
+  row_format: "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+  dir_depth: "2"
+  command_tail: "2"
+  colors: |
+    "{tab_id}-{pane_id}" "yellow"
+    "{title}" "red"
+    progress {
+        running "green"
+        idle "yellow"
+        exited "red"
+        unknown "magenta"
+    }
 world:
   current: demo
   sessions:
@@ -25,7 +36,7 @@ steps:
         active: true
         tiled: 1
   - action: event_json
-    json: '{"CommandChanged":[{"Terminal":1},["codex","--full-auto"],true,[]]}'
+    json: '{"CommandChanged":[{"Terminal":1},["codex","--full-auto","--model","gpt-5","--sandbox","danger"],true,[]]}'
   - action: event_json
     json: '{"CommandChanged":[{"Terminal":2},["nvim","notes.md"],false,[]]}'
   - action: event_json
@@ -66,7 +77,7 @@ steps:
                 "pane_columns": 50,
                 "pane_content_columns": 50,
                 "cursor_coordinates_in_pane": null,
-                "terminal_command": "codex --full-auto",
+                "terminal_command": "codex --full-auto --model gpt-5 --sandbox danger",
                 "plugin_url": null,
                 "is_selectable": true,
                 "index_in_pane_group": {},

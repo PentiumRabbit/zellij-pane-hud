@@ -1,9 +1,10 @@
 [package]
 name = "pane-switcher-core"
-version = "0.1.2"
+version = "0.1.3"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+kdl.workspace = true
 unicode-width.workspace = true

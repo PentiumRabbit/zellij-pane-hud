@@ -1,5 +1,5 @@
 pub const DEFAULT_ROW_FORMAT: &str =
-    "{progress} {icon} {title}  {dir}  {session}/{tab}  {command}  #{pane_id}";
+    "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TemplateField {
@@ -9,6 +9,7 @@ pub enum TemplateField {
     Dir,
     Session,
     Tab,
+    TabId,
     Command,
     PaneId,
 }
@@ -22,6 +23,7 @@ impl TemplateField {
             "dir" => Some(Self::Dir),
             "session" => Some(Self::Session),
             "tab" => Some(Self::Tab),
+            "tab_id" => Some(Self::TabId),
             "command" => Some(Self::Command),
             "pane_id" => Some(Self::PaneId),
             _ => None,
