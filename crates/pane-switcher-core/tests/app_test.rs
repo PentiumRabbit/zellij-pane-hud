@@ -61,6 +61,150 @@ fn finder_initially_selects_the_focused_pane() {
 }
 
 #[test]
+fn query_change_selects_the_highest_scored_match() {
+    let mut focused = pane(1, true);
+    focused.title = "codex-api".into();
+    let mut shorter_match = pane(2, false);
+    shorter_match.title = "code".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![focused, shorter_match]));
+    finder.refresh();
+
+    finder.set_query("code");
+
+    assert_eq!(
+        finder.selected_row().map(|row| row.title.as_str()),
+        Some("code")
+    );
+}
+
+#[test]
+fn typing_selects_the_highest_scored_match() {
+    let mut focused = pane(1, true);
+    focused.title = "codex-api".into();
+    let mut shorter_match = pane(2, false);
+    shorter_match.title = "code".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![focused, shorter_match]));
+    finder.refresh();
+
+    finder.insert_char('c');
+
+    assert_eq!(
+        finder.selected_row().map(|row| row.title.as_str()),
+        Some("code")
+    );
+}
+
+#[test]
+fn backspace_selects_the_highest_scored_match() {
+    let mut focused = pane(1, true);
+    focused.title = "codex-api".into();
+    let mut shorter_match = pane(2, false);
+    shorter_match.title = "code".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![focused, shorter_match]));
+    finder.refresh();
+    finder.set_query("cod");
+    finder.selection_down();
+
+    finder.backspace();
+
+    assert_eq!(
+        finder.selected_row().map(|row| row.title.as_str()),
+        Some("code")
+    );
+}
+
+#[test]
+fn delete_word_selects_the_highest_scored_match() {
+    let mut focused = pane(1, true);
+    focused.title = "codex-api extra".into();
+    let mut shorter_match = pane(2, false);
+    shorter_match.title = "code extra".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![focused, shorter_match]));
+    finder.refresh();
+    finder.set_query("cod extra");
+    finder.selection_down();
+
+    finder.delete_word();
+
+    assert_eq!(
+        finder.selected_row().map(|row| row.title.as_str()),
+        Some("code extra")
+    );
+}
+
+#[test]
+fn clearing_the_query_restores_the_focused_pane() {
+    let mut shorter_match = pane(1, false);
+    shorter_match.title = "code".into();
+    let mut focused = pane(2, true);
+    focused.title = "codex-api".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![shorter_match, focused]));
+    finder.refresh();
+    finder.set_query("code");
+    assert_eq!(finder.selected_row().map(|row| row.pane.id), Some(1));
+
+    finder.clear_query();
+
+    assert_eq!(finder.selected_row().map(|row| row.pane.id), Some(2));
+}
+
+#[test]
+fn whitespace_only_query_keeps_the_focused_pane_selected() {
+    let mut shorter_match = pane(1, false);
+    shorter_match.title = "code".into();
+    let mut focused = pane(2, true);
+    focused.title = "codex-api".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![shorter_match, focused]));
+    finder.refresh();
+
+    finder.set_query("   ");
+
+    assert_eq!(finder.selected_row().map(|row| row.pane.id), Some(2));
+}
+
+#[test]
+fn data_refresh_with_an_unchanged_query_preserves_manual_selection() {
+    let mut shorter_match = pane(1, false);
+    shorter_match.title = "code".into();
+    let mut focused = pane(2, true);
+    focused.title = "codex-api".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![shorter_match, focused]));
+    finder.refresh();
+    finder.set_query("code");
+    finder.selection_down();
+    assert_eq!(finder.selected_row().map(|row| row.pane.id), Some(2));
+
+    finder.set_command("work", 1, vec!["cargo".into(), "test".into()]);
+
+    assert_eq!(finder.selected_row().map(|row| row.pane.id), Some(2));
+}
+
+#[test]
+fn query_typed_before_rows_arrive_selects_the_highest_scored_match() {
+    let mut focused = pane(1, true);
+    focused.title = "codex-api".into();
+    let mut shorter_match = pane(2, false);
+    shorter_match.title = "code".into();
+    let mut finder = Finder::new(Config::default());
+    finder.set_query("code");
+    finder.refresh();
+
+    finder.set_snapshot(world_with(vec![focused, shorter_match]));
+
+    assert_eq!(
+        finder.selected_row().map(|row| row.title.as_str()),
+        Some("code")
+    );
+}
+
+#[test]
 fn flattened_pane_navigation_keeps_session_tab_and_pane_identity() {
     let mut finder = Finder::new(Config::default());
     finder.set_snapshot(world_with(vec![pane(7, true)]));

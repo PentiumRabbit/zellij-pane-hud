@@ -75,6 +75,11 @@ impl Selection {
         self.sync_key(rows);
     }
 
+    pub fn select_first(&mut self, rows: &Rows) {
+        self.index = 0;
+        self.sync_key(rows);
+    }
+
     pub fn restore(&mut self, rows: &Rows, fallback: Option<&NodeKey>) {
         if !rows.rows.is_empty() {
             if let Some(selected) = self.selected_key.as_ref() {

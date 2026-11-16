@@ -26,8 +26,11 @@ It is not a permanent sidebar and does not render a session/tab tree.
    necessary.
 7. Esc closes without navigation.
 
-The focused pane is selected initially when `follow_current_session=true`.
-Selection is restored by stable session/tab/pane identity across row rebuilds.
+The focused pane is selected when no query is active and
+`follow_current_session=true`. A non-whitespace query selects the top-ranked
+result after every query change. Clearing or reducing the query to whitespace
+selects the focused pane again. When the query is unchanged, manual selection
+is restored by stable session/tab/pane identity across data and row rebuilds.
 
 ## Default row
 
@@ -175,6 +178,10 @@ current session first
 tab position
 pane ID
 ```
+
+Because the first row is the highest-scoring result, non-empty query changes
+select index zero directly. This keeps the selected background and Enter
+target aligned with the strongest visible match.
 
 Matched characters are bold yellow. Only matched characters change foreground
 style.

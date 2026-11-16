@@ -7,7 +7,8 @@
 一个面向 Zellij 的浮动 Pane 搜索与切换器。每个终端 Pane 单独展示为一行，
 显示运行状态、类型图标、Tab-Pane ID、标题、简写目录和简写命令。
 
-输入关键字即可模糊筛选，按 Enter 聚焦当前会话或其他活动会话中的 Pane。
+输入关键字即可模糊筛选，默认会自动选中最佳匹配；按 Enter 即可聚焦当前会话
+或其他活动会话中最相关的结果。
 
 ```text
 FIND  ›
@@ -28,6 +29,8 @@ FIND  ›
 - 支持 UTF-8 安全匹配、高亮和 Unicode 显示宽度。
 - 支持 Nerd Font 图标和纯文本图标。
 - 跟随 Zellij 当前主题颜色。
+- 查询变化后自动选中最佳匹配；清空查询后回到当前 Pane，查询不变时的手动选择
+  会跨 Zellij 数据刷新保持稳定。
 - 支持嵌套覆盖模板片段和进度状态颜色。
 - 搜索行、进度图标、类型图标、字段和选中背景使用不同的语义颜色。
 - 渲染只处理当前视口，不会为所有行生成终端输出。
@@ -155,7 +158,7 @@ Zellij server 启动前运行一个轻量检查器：读取 GitHub 最新 Releas
 固定版本示例：
 
 ```text
-https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.2/pane-switcher.wasm
+https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.4/pane-switcher.wasm
 ```
 
 本地开发时也可以使用：

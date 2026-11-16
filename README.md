@@ -8,8 +8,9 @@ A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, tab-pane ID, title, abbreviated
 directory, and abbreviated command.
 
-Type to fuzzy-filter the pane list, then press Enter to focus the selected pane
-in the current or another live session.
+Type to fuzzy-filter the pane list. The best-scoring match is selected as you
+type, so Enter immediately focuses the top result in the current or another
+live session.
 
 ```text
 ╭─ FIND ───────────────────────────────────────────────╮
@@ -42,8 +43,10 @@ in the current or another live session.
   `ModeInfo.style.colors`.
 - Full-width theme-selected row background while preserving icon and match
   colors.
-- Stable pane selection across Zellij updates and one-step cross-session pane
-  focus.
+- Best-scoring result selected whenever the query changes; clearing a
+  non-whitespace query returns to the focused pane, while manual selection
+  remains stable across unrelated Zellij data updates.
+- One-step cross-session pane focus.
 - Nerd Font and plain-text icon modes.
 - Viewport-bounded rendering and cached search rows. Selection movement,
   rendering, and spinner frames do not rebuild search results.

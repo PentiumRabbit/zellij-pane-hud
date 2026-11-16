@@ -22,6 +22,14 @@ pub enum NavigationTarget {
     },
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+enum SelectionIntent {
+    #[default]
+    Preserve,
+    Focused,
+    BestMatch,
+}
+
 #[derive(Clone, Debug)]
 pub struct Finder {
     config: Config,
@@ -31,7 +39,7 @@ pub struct Finder {
     selection: Selection,
     rows: Rows,
     dirty: bool,
-    needs_initial_selection: bool,
+    selection_intent: SelectionIntent,
     rebuild_count: u64,
     spinner_tick: u64,
 }
@@ -52,7 +60,7 @@ impl Finder {
             selection: Selection::default(),
             rows: Rows::default(),
             dirty: true,
-            needs_initial_selection: true,
+            selection_intent: SelectionIntent::Focused,
             rebuild_count: 0,
             spinner_tick: 0,
         }
@@ -150,32 +158,32 @@ impl Finder {
         }
         self.query.clear();
         self.query.insert_str(query);
-        self.dirty = true;
+        self.mark_query_changed();
     }
 
     pub fn insert_char(&mut self, character: char) {
         self.query.insert_char(character);
-        self.dirty = true;
+        self.mark_query_changed();
     }
 
     pub fn backspace(&mut self) {
         if !self.query.is_empty() {
             self.query.backspace();
-            self.dirty = true;
+            self.mark_query_changed();
         }
     }
 
     pub fn delete_word(&mut self) {
         if !self.query.is_empty() {
             self.query.delete_word();
-            self.dirty = true;
+            self.mark_query_changed();
         }
     }
 
     pub fn clear_query(&mut self) {
         if !self.query.is_empty() {
             self.query.clear();
-            self.dirty = true;
+            self.mark_query_changed();
         }
     }
 
@@ -203,14 +211,24 @@ impl Finder {
         }
         self.rows = Rows::build(&self.world, &self.config, self.query.as_str(), &self.values);
         let focused = self.focused_key();
-        if self.needs_initial_selection {
-            if let Some(focused) = focused.as_ref() {
-                self.selection.select_key(&self.rows, focused);
+        if !self.rows.rows.is_empty() {
+            match self.selection_intent {
+                SelectionIntent::Preserve => {
+                    self.selection.restore(&self.rows, focused.as_ref());
+                }
+                SelectionIntent::Focused => {
+                    if let Some(focused) = focused.as_ref() {
+                        self.selection.select_key(&self.rows, focused);
+                    } else {
+                        self.selection.select_first(&self.rows);
+                    }
+                    self.selection_intent = SelectionIntent::Preserve;
+                }
+                SelectionIntent::BestMatch => {
+                    self.selection.select_first(&self.rows);
+                    self.selection_intent = SelectionIntent::Preserve;
+                }
             }
-            self.selection.restore(&self.rows, focused.as_ref());
-            self.needs_initial_selection = focused.is_none();
-        } else {
-            self.selection.restore(&self.rows, focused.as_ref());
         }
         self.rebuild_count += 1;
         self.dirty = false;
@@ -285,6 +303,15 @@ impl Finder {
             })
             .or_else(|| current.tabs.iter().flat_map(|tab| &tab.panes).next())
             .map(|pane| pane.key.clone())
+    }
+
+    fn mark_query_changed(&mut self) {
+        self.dirty = true;
+        self.selection_intent = if self.query.as_str().trim().is_empty() {
+            SelectionIntent::Focused
+        } else {
+            SelectionIntent::BestMatch
+        };
     }
 }
 

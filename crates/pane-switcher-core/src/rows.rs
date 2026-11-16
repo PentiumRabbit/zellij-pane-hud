@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::cmp::Reverse;
 use std::path::{Path, PathBuf};
 
 use crate::config::{Config, Scope, SearchMode};
@@ -115,7 +116,7 @@ impl Rows {
             );
         }
 
-        rows.sort_by(|left, right| right.score.cmp(&left.score));
+        rows.sort_by_key(|row| Reverse(row.score));
         Self { rows }
     }
 }
