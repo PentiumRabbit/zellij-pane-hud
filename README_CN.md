@@ -161,7 +161,7 @@ Zellij server 启动前运行一个轻量检查器：读取 GitHub 最新 Releas
 固定版本示例：
 
 ```text
-https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.5/pane-switcher.wasm
+https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.6/pane-switcher.wasm
 ```
 
 本地开发时也可以使用：
