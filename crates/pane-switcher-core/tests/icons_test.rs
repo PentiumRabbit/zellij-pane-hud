@@ -2,6 +2,7 @@ use pane_switcher_core::config::IconsMode;
 use pane_switcher_core::icons::{classify_pane, icon_for, progress_state, PaneVisualState};
 use pane_switcher_core::model::{LivePane, NodeKey};
 use pane_switcher_core::rows::ProgressState;
+use unicode_width::UnicodeWidthStr;
 
 fn pane() -> LivePane {
     LivePane {
@@ -79,8 +80,35 @@ fn nerd_and_plain_modes_have_distinct_nonempty_icons() {
     let nerd = icon_for(PaneVisualState::Codex, IconsMode::Nerd);
     let plain = icon_for(PaneVisualState::Codex, IconsMode::Plain);
     assert_eq!(nerd, "❉");
-    assert_eq!(plain, "CX");
+    assert_eq!(plain, "C");
     assert_ne!(nerd, plain);
+}
+
+#[test]
+fn every_type_icon_uses_exactly_one_display_column() {
+    let states = [
+        PaneVisualState::Focused,
+        PaneVisualState::Shell,
+        PaneVisualState::Command,
+        PaneVisualState::Codex,
+        PaneVisualState::Claude,
+        PaneVisualState::Editor,
+        PaneVisualState::Floating,
+        PaneVisualState::Fullscreen,
+        PaneVisualState::Stacked,
+        PaneVisualState::Exited,
+        PaneVisualState::Unknown,
+    ];
+
+    for mode in [IconsMode::Nerd, IconsMode::Plain] {
+        for state in states {
+            assert_eq!(
+                UnicodeWidthStr::width(icon_for(state, mode)),
+                1,
+                "{state:?} icon in {mode:?} mode must occupy one display column"
+            );
+        }
+    }
 }
 
 #[test]

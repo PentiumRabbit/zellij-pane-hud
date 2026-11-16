@@ -14,9 +14,9 @@
 FIND  ›
 ──────────────────────────────────────────────────────────────
 ◓ ❉ 3-1 src renderer  src/ui  codex --full-auto
-○ >_ 3-2 shell  .  zsh
-✖ 󰈙 4-3 old editor  workspace  nvim notes.md
-↑↓ move  Enter jump  Esc close
+✓ $ 3-2 shell  .  zsh
+✕ 󰈙 4-3 old editor  workspace  nvim notes.md
+↑↓/Tab move  Shift+Tab back  Enter jump  Esc close
 ```
 
 ## 功能
@@ -28,6 +28,8 @@ FIND  ›
 - 可跳转到当前会话或其他活动会话中的终端 Pane。
 - 支持 UTF-8 安全匹配、高亮和 Unicode 显示宽度。
 - 支持 Nerd Font 图标和纯文本图标。
+- 状态和类型图标固定占一列；可用命令显示绿色对号，失败或退出命令显示红色叉号。
+- 插件 Pane 标题固定显示为 `pane-switcher`，不再暴露完整 WASM 路径。
 - 跟随 Zellij 当前主题颜色。
 - 查询变化后自动选中最佳匹配；清空查询后回到当前 Pane，查询不变时的手动选择
   会跨 Zellij 数据刷新保持稳定。
@@ -75,8 +77,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }
@@ -110,8 +112,8 @@ plugins {
             "{tab_id}-{pane_id}" "yellow"
             progress {
                 running "red"
-                idle "yellow"
-                exited "green"
+                idle "green"
+                exited "red"
                 unknown "red"
             }
         }
@@ -158,7 +160,7 @@ Zellij server 启动前运行一个轻量检查器：读取 GitHub 最新 Releas
 固定版本示例：
 
 ```text
-https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.4/pane-switcher.wasm
+https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.5/pane-switcher.wasm
 ```
 
 本地开发时也可以使用：
@@ -177,8 +179,8 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 | Backspace | 删除一个字符 |
 | `Ctrl+w` | 删除前一个词 |
 | `Ctrl+u` | 清空搜索词 |
-| Up / `Ctrl+p` | 选择上一条 |
-| Down / `Ctrl+n` | 选择下一条 |
+| Up / `Ctrl+p` / `Shift+Tab` | 选择上一条 |
+| Down / `Ctrl+n` / `Tab` | 选择下一条 |
 | PageUp / PageDown | 按十行移动 |
 | Enter | 聚焦选中 Pane 并关闭 |
 | Esc | 关闭，不跳转 |
@@ -198,8 +200,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }

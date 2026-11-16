@@ -197,9 +197,47 @@ fn nested_progress_colors_are_selected_by_state() {
     );
 
     assert!(frame.lines[2].contains("\u{1b}[38;5;46m◐\u{1b}[0m"));
-    assert!(frame.lines[3].contains("\u{1b}[38;5;226m○\u{1b}[0m"));
-    assert!(frame.lines[4].contains("\u{1b}[38;5;196m✖\u{1b}[0m"));
+    assert!(frame.lines[3].contains("\u{1b}[38;5;226m✓\u{1b}[0m"));
+    assert!(frame.lines[4].contains("\u{1b}[38;5;196m✕\u{1b}[0m"));
     assert!(frame.lines[5].contains("\u{1b}[38;5;201m?\u{1b}[0m"));
+}
+
+#[test]
+fn idle_progress_uses_a_green_check_mark() {
+    let mut idle = row(1, "idle", ".", "zsh");
+    idle.progress = ProgressState::Idle;
+    let rows = Rows { rows: vec![idle] };
+    let frame = render_frame(
+        &rows,
+        None,
+        80,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+
+    assert!(frame.lines[2].contains("\u{1b}[38;5;46m✓\u{1b}[0m"));
+}
+
+#[test]
+fn exited_progress_uses_a_red_cross_mark() {
+    let mut exited = row(1, "failed", ".", "false");
+    exited.progress = ProgressState::Exited;
+    let rows = Rows { rows: vec![exited] };
+    let frame = render_frame(
+        &rows,
+        None,
+        80,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+
+    assert!(frame.lines[2].contains("\u{1b}[38;5;196m✕\u{1b}[0m"));
 }
 
 #[test]
@@ -279,9 +317,8 @@ fn shell_type_icons_use_a_visible_green_instead_of_idle_gray() {
     let rendered = frame.lines.join("\n");
 
     assert!(rendered.contains("38;5;46"));
-    assert!(rendered.contains(">_"));
-    assert!(rendered.contains("38;5;245"));
-    assert!(rendered.contains("○"));
+    assert!(rendered.contains("$"));
+    assert!(rendered.contains("✓"));
 }
 
 #[test]
@@ -346,6 +383,27 @@ fn relies_on_the_zellij_pane_frame_instead_of_drawing_an_inner_border() {
     assert!(!rendered.contains('╭'));
     assert!(!rendered.contains('╰'));
     assert_line_widths(&frame.lines, 60);
+}
+
+#[test]
+fn footer_documents_tab_navigation() {
+    let frame = render_frame(
+        &Rows::default(),
+        None,
+        100,
+        12,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+    let footer = frame.lines.last().expect("footer");
+
+    assert!(footer.contains("Tab"));
+    assert!(footer.contains("Shift+Tab"));
 }
 
 #[test]
@@ -528,7 +586,7 @@ fn progress_states_have_distinct_semantic_colors() {
     );
     let rendered = frame.lines.join("\n");
 
-    assert!(rendered.contains("\u{1b}[38;5;245m"));
+    assert!(rendered.contains("\u{1b}[38;5;46m"));
     assert!(rendered.contains("\u{1b}[38;5;196m"));
     assert!(rendered.contains("\u{1b}[38;5;240m"));
 }

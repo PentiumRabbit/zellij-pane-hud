@@ -73,7 +73,11 @@ pub fn render_frame(
         lines.push(render_spans(fitted_spans(Vec::new(), cols, false), options));
     }
     lines.push(render_text_line(
-        fitted_text(" ↑↓ move  Enter jump  Esc close ", cols, BORDER_COLOR),
+        fitted_text(
+            " ↑↓/Tab move  Shift+Tab back  Enter jump  Esc close ",
+            cols,
+            BORDER_COLOR,
+        ),
         options,
     ));
     lines.truncate(height);
@@ -194,8 +198,8 @@ fn progress_glyph(
             },
             colors.running,
         ),
-        ProgressState::Idle => ("○", colors.idle),
-        ProgressState::Exited => ("✖", colors.exited),
+        ProgressState::Idle => ("✓", colors.idle),
+        ProgressState::Exited => ("✕", colors.exited),
         ProgressState::Unknown => ("?", colors.unknown),
     }
 }

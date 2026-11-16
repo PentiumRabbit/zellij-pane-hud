@@ -184,6 +184,18 @@ fn key_adapter_handles_ctrl_shortcuts_and_utf8_text() {
 }
 
 #[test]
+fn tab_keys_move_selection_like_down_and_up() {
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Tab)),
+        InputIntent::Down
+    );
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Tab).with_shift_modifier()),
+        InputIntent::Up
+    );
+}
+
+#[test]
 fn zellij_style_colors_map_to_pane_switcher_semantic_palette() {
     let mut style = Style::default();
     let colors = &mut style.colors;

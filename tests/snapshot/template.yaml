@@ -100,3 +100,5 @@ steps:
     json: '{"Key":{"bare_key":{"Char":"c"},"key_modifiers":[]}}'
   - action: event_json
     json: '{"Key":{"bare_key":{"Char":"o"},"key_modifiers":[]}}'
+  - action: event_json
+    json: '{"Key":{"bare_key":"Tab","key_modifiers":[]}}'

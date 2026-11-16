@@ -14,6 +14,7 @@ use crate::adapter::{
 };
 
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
+const PLUGIN_PANE_NAME: &str = "pane-switcher";
 
 #[derive(Default)]
 pub struct PaneSwitcherPlugin {
@@ -64,6 +65,7 @@ impl ZellijPlugin for PaneSwitcherPlugin {
         match event {
             Event::PermissionRequestResult(PermissionStatus::Granted) => {
                 self.permissions_granted = true;
+                self.name_plugin_pane();
                 self.query_current_session_values();
                 self.schedule_spinner();
                 true
@@ -207,6 +209,11 @@ impl PaneSwitcherPlugin {
         }
         self.last_reported_cursor = Some(cursor);
         true
+    }
+
+    fn name_plugin_pane(&self) {
+        let plugin_id = get_plugin_ids().plugin_id;
+        rename_plugin_pane(plugin_id, PLUGIN_PANE_NAME);
     }
 
     fn on_key(&mut self, key: KeyWithModifier) -> bool {

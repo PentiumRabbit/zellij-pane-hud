@@ -11,8 +11,8 @@ plugins {
             "{tab_id}-{pane_id}" "yellow"
             progress {
                 running "red"
-                idle "yellow"
-                exited "green"
+                idle "green"
+                exited "red"
                 unknown "red"
             }
         }

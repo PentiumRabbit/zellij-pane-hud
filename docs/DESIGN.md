@@ -20,7 +20,8 @@ It is not a permanent sidebar and does not render a session/tab tree.
 1. The user opens the configured floating plugin.
 2. Every live selectable terminal pane is represented by exactly one row.
 3. Typing filters rows using only text fields present in `row_format`.
-4. Up/Down and `Ctrl+p`/`Ctrl+n` move through the flat result list.
+4. Up/Down, `Ctrl+p`/`Ctrl+n`, Tab, and Shift+Tab move through the flat
+   result list.
 5. Left/Right are ignored.
 6. Enter focuses the selected pane, closes the HUD, and switches sessions when
    necessary.
@@ -42,8 +43,8 @@ Example:
 
 ```text
 ◓ ❉ 3-1 fix search rendering  pane-switcher-core  codex … --sandbox danger
-○ >_ 3-2 zsh  .  zsh
-✖ 󰈙 4-3 old editor  workspace  nvim notes.md
+✓ $ 3-2 zsh  .  zsh
+✕ 󰈙 4-3 old editor  workspace  nvim notes.md
 ```
 
 Progress comes first so running state is the easiest attribute to scan.
@@ -97,8 +98,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }
@@ -195,8 +196,8 @@ Progress:
 | State | Glyph | Color |
 |---|---|---|
 | Running | four-frame spinner | cyan |
-| Idle shell | `○` | gray |
-| Exited | `✖` | red |
+| Idle shell | `✓` | green |
+| Exited | `✕` | red |
 | Unknown | `?` | dark gray |
 
 Command category:
@@ -212,9 +213,15 @@ Command category:
 | floating/fullscreen/stacked | blue |
 | unknown | dark gray |
 
+Every progress and command-category glyph occupies exactly one terminal display
+column in both Nerd and plain modes, so text fields stay vertically aligned.
+
 The selected row uses the active Zellij `text_selected` background across its
 complete terminal width. Icon foregrounds and bold-yellow match highlights
 remain visible on that background.
+
+After permissions are granted, the plugin renames its own plugin pane to
+`pane-switcher`, avoiding a long URL or local WASM path in the pane frame.
 
 Directory text is blue. Other text fields use the normal foreground.
 
@@ -348,8 +355,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }

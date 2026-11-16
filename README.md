@@ -17,9 +17,9 @@ live session.
 │ › sr                                          Esc   │
 ├──────────────────────────────────────────────────────┤
 │ ◓ ❉ 3-1 src renderer  src/ui  codex --full-auto │
-│ ○ 󰈙 3-2 editor notes  workspace/notes  nvim      │
-│ ✖ >_ 4-3 old shell  tmp/elsewhere  zsh           │
-│ ↑↓ move  Enter jump  Esc close                      │
+│ ✓ 󰈙 3-2 editor notes  workspace/notes  nvim      │
+│ ✕ $ 4-3 old shell  tmp/elsewhere  zsh            │
+│ ↑↓/Tab move  Shift+Tab back  Enter jump  Esc close  │
 ╰──────────────────────────────────────────────────────╯
 ```
 
@@ -48,6 +48,10 @@ live session.
   remains stable across unrelated Zellij data updates.
 - One-step cross-session pane focus.
 - Nerd Font and plain-text icon modes.
+- Single-column status and category glyphs keep row fields aligned; available
+  shells use a green check and exited commands use a red cross.
+- The plugin pane title is normalized to `pane-switcher` instead of exposing
+  the full WASM path.
 - Viewport-bounded rendering and cached search rows. Selection movement,
   rendering, and spinner frames do not rebuild search results.
 
@@ -97,8 +101,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }
@@ -191,8 +195,8 @@ plugins {
             "{tab_id}-{pane_id}" "yellow"
             progress {
                 running "red"
-                idle "yellow"
-                exited "green"
+                idle "green"
+                exited "red"
                 unknown "red"
             }
         }
@@ -256,8 +260,8 @@ are not registered by this plugin.
 | Backspace | Delete one character |
 | `Ctrl+w` | Delete the previous word |
 | `Ctrl+u` | Clear the query |
-| Up / `Ctrl+p` | Select previous pane row |
-| Down / `Ctrl+n` | Select next pane row |
+| Up / `Ctrl+p` / `Shift+Tab` | Select previous pane row |
+| Down / `Ctrl+n` / `Tab` | Select next pane row |
 | PageUp / PageDown | Move by ten rows |
 | Enter | Focus the selected pane and close |
 | Esc | Close without navigation |
@@ -277,8 +281,8 @@ colors {
     "{tab_id}-{pane_id}" "yellow"
     progress {
         running "red"
-        idle "yellow"
-        exited "green"
+        idle "green"
+        exited "red"
         unknown "red"
     }
 }

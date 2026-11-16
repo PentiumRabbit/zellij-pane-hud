@@ -15,7 +15,7 @@ impl Default for ProgressColors {
     fn default() -> Self {
         Self {
             running: ForegroundColor::Cyan,
-            idle: ForegroundColor::Gray,
+            idle: ForegroundColor::Green,
             exited: ForegroundColor::Red,
             unknown: ForegroundColor::DarkGray,
         }

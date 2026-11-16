@@ -70,6 +70,8 @@ pub fn key_intent(key: &KeyWithModifier) -> InputIntent {
     match key.bare_key {
         BareKey::Up => InputIntent::Up,
         BareKey::Down => InputIntent::Down,
+        BareKey::Tab if key.key_modifiers.contains(&KeyModifier::Shift) => InputIntent::Up,
+        BareKey::Tab => InputIntent::Down,
         BareKey::PageUp => InputIntent::PageUp,
         BareKey::PageDown => InputIntent::PageDown,
         BareKey::Backspace => InputIntent::Backspace,
