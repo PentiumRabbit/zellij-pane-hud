@@ -64,7 +64,7 @@ The template is parsed once at plugin load into literal and field parts.
 | `{session}`  | Live session name                             |
 | `{tab}`      | Tab name                                      |
 | `{tab_id}`   | Stable numeric Zellij tab ID                  |
-| `{command}`  | Program and last `command_tail` arguments     |
+| `{command}`  | Program and complete command arguments        |
 | `{pane_id}`  | Numeric terminal pane ID                      |
 
 Rules:
@@ -139,15 +139,17 @@ missing path             ?
 Relative, absolute, and descendant paths are abbreviated to their last
 `dir_depth` components for display. The full CWD remains searchable.
 
-Commands use the executable basename followed by the last `command_tail`
-arguments. When arguments are omitted, a single ellipsis marks the gap:
+Commands use the executable basename followed by all arguments. The complete
+command is retained for the row model and search corpus:
 
 ```text
 codex --full-auto --model gpt-5 --sandbox danger
-  -> codex … --sandbox danger
+  -> codex --full-auto --model gpt-5 --sandbox danger
 ```
 
-The full command remains searchable.
+The renderer truncates the finished row with an ellipsis only when the current
+viewport width cannot display it. `command_tail` is accepted as a legacy key
+but no longer truncates command display.
 
 Comparison uses path components through `Path::strip_prefix`, so
 `/work/app` is not treated as the parent of `/work/application`.
@@ -350,8 +352,9 @@ their rows still support structural search and pane navigation.
 ```kdl
 scope "all"                    // current | all
 row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+width "72%"                    // terminal-width percentage
+height "68%"                   // terminal-height percentage
 dir_depth "2"                  // path components to display
-command_tail "2"               // trailing command arguments to display
 colors {
     "{title}" "red"
     "{tab_id}-{pane_id}" "yellow"

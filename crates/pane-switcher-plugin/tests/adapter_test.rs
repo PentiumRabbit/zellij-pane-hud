@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use pane_switcher_core::app::NavigationTarget;
+use pane_switcher_core::config::Config;
 use pane_switcher_core::model::NodeKey;
 use pane_switcher_core::style::{ColorSpec, ThemePalette};
 use pane_switcher_plugin::adapter::{
-    key_intent, mouse_intent, navigation_action, pane_manifest_input, session_input, tab_inputs,
-    theme_palette, InputIntent, MouseIntent, NavigationAction,
+    configured_floating_coordinates, key_intent, mouse_intent, navigation_action,
+    pane_manifest_input, session_input, tab_inputs, theme_palette, InputIntent, MouseIntent,
+    NavigationAction,
 };
 use zellij_tile::prelude::{
     BareKey, KeyWithModifier, Mouse, PaletteColor, PaneId, PaneInfo, PaneManifest, SessionInfo,
@@ -181,6 +183,33 @@ fn key_adapter_handles_ctrl_shortcuts_and_utf8_text() {
         key_intent(&KeyWithModifier::new(BareKey::Right)),
         InputIntent::Ignored
     );
+}
+
+#[test]
+fn cjk_commit_is_inserted_even_when_ime_reports_modifiers() {
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Char('的')).with_ctrl_modifier()),
+        InputIntent::Insert('的')
+    );
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Char('的')).with_alt_modifier()),
+        InputIntent::Insert('的')
+    );
+}
+
+#[test]
+fn floating_size_accepts_percent_and_fixed_terminal_dimensions() {
+    let defaults = configured_floating_coordinates(&Config::default()).expect("default size");
+    assert_eq!(format!("{:?}", defaults.width), "Some(Percent(72))");
+    assert_eq!(format!("{:?}", defaults.height), "Some(Percent(68))");
+
+    let fixed = Config::from_map(&std::collections::BTreeMap::from([
+        ("width".into(), "120".into()),
+        ("height".into(), "40%".into()),
+    ]));
+    let coordinates = configured_floating_coordinates(&fixed).expect("configured size");
+    assert_eq!(format!("{:?}", coordinates.width), "Some(Fixed(120))");
+    assert_eq!(format!("{:?}", coordinates.height), "Some(Percent(40))");
 }
 
 #[test]

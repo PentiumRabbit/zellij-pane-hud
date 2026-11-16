@@ -5,7 +5,7 @@
 [![CI](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pr-g/zellij-pane-switcher/actions/workflows/ci.yml)
 
 一个面向 Zellij 的浮动 Pane 搜索与切换器。每个终端 Pane 单独展示为一行，
-显示运行状态、类型图标、Tab-Pane ID、标题、简写目录和简写命令。
+显示运行状态、类型图标、Tab-Pane ID、标题、简写目录和命令参数。
 
 输入关键字即可模糊筛选，默认会自动选中最佳匹配；按 Enter 即可聚焦当前会话
 或其他活动会话中最相关的结果。
@@ -23,7 +23,8 @@ FIND  › sr
 
 - 每个终端 Pane 一行，没有树形层级、折叠或详情面板。
 - 行模板可配置，可显示标题、相对目录、状态、图标、会话、Tab、Tab ID、命令和 Pane ID。
-- 目录和命令可配置简写级数，同时完整内容仍可搜索。
+- 浮动窗口宽高可配置为终端百分比或固定行列数。
+- 命令参数优先完整显示，只有行宽不足时才省略。
 - 搜索只匹配模板中可见的文字字段；模糊查询可以跨相邻字段匹配。
 - 可跳转到当前会话或其他活动会话中的终端 Pane。
 - 支持 UTF-8 安全匹配、高亮和 Unicode 显示宽度。
@@ -56,7 +57,7 @@ FIND  › sr
 | `{session}`  | 活动会话名称                     |
 | `{tab}`      | Tab 名称                         |
 | `{tab_id}`   | Zellij 稳定 Tab ID               |
-| `{command}`  | 程序和最后 `command_tail` 个参数 |
+| `{command}`  | 程序和完整命令参数               |
 | `{pane_id}`  | 数字终端 Pane ID                 |
 
 默认字段颜色：
@@ -93,7 +94,7 @@ colors {
 搜索命中的字符使用粗体黄色。选中行保留完整背景，同时保留字段颜色。
 
 只有当前模板中的文字字段会参与搜索。例如去掉 `{dir}` 后，目录就不会再被匹配。
-目录和命令虽然会简写显示，完整值仍然参与搜索。
+目录可以简写显示，完整命令仍然参与搜索。
 跨字段搜索会保留模板中的分隔符，因此默认格式可以直接搜索 `3-7`。
 `{{` 和 `}}` 可以输出字面量花括号；未知或未闭合的模板字段会按普通文字处理。
 
@@ -106,8 +107,9 @@ plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+        width "72%"
+        height "68%"
         dir_depth "2"
-        command_tail "2"
         colors {
             "{title}" "red"
             "{tab_id}-{pane_id}" "yellow"
@@ -196,8 +198,11 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 ```kdl
 scope "all"                    // current | all
 row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+width "72%"                    // 终端宽度百分比
+height "68%"                   // 终端高度百分比
 dir_depth "2"                  // 目录显示级数
-command_tail "2"               // 命令尾部显示参数数
+// width "120"                 // 固定 120 列
+// height "40"                 // 固定 40 行
 colors {
     "{title}" "red"
     "{tab_id}-{pane_id}" "yellow"
@@ -216,8 +221,9 @@ follow_current_session "true"
 
 - `scope`：只搜索当前会话，或搜索所有活动会话。
 - `row_format`：控制显示顺序和搜索字段。
+- `width` / `height`：支持百分比或固定行列数，默认 `72%` / `68%`。
 - `dir_depth`：目录最多显示最后几级，默认 `2`。
-- `command_tail`：命令保留程序名后再显示最后几个参数，默认 `2`。
+- `command_tail`：仅为兼容旧配置保留，不再影响命令显示。
 - `icons`：Nerd Font 图标或纯文本图标。
 - `search_mode`：模糊匹配或连续子串匹配。
 - `spinner_fps`：运行状态动画刷新频率。
@@ -264,7 +270,11 @@ pane-switcher.wasm.sha256
 - 只列出可选中的活动终端 Pane。
 - 插件 Pane、不可选择的 UI Pane 和无活动 Pane 的已关闭会话不会显示。
 - Zellij 0.45.1 不支持插件自行注册全局快捷键，因此需要在 KDL 中配置。
-- 浮动 Pane 的尺寸由 Zellij 管理。
+- 插件获得权限后应用配置的浮动 Pane 宽高；百分比按当前终端尺寸计算。
+- 支持输入法提交后的中文文本；拼音预编辑和候选窗口由终端与输入法管理。
+- Zellij 0.45.1 的插件按键解码会把非 ASCII `Key::Char` 截断成 `u8`。
+  发布构建会对 `zellij-utils` 应用一个兼容协议的最小补丁，确保单个汉字提交
+  不会丢失。
 - Zellij 负责原生浮动 Pane 边框，插件只渲染内容。
 
 ## 开发验证

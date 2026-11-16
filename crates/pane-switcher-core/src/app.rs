@@ -166,6 +166,11 @@ impl Finder {
         self.mark_query_changed();
     }
 
+    pub fn insert_str(&mut self, text: &str) {
+        self.query.insert_str(text);
+        self.mark_query_changed();
+    }
+
     pub fn backspace(&mut self) {
         if !self.query.is_empty() {
             self.query.backspace();

@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 
 use pane_switcher_core::app::NavigationTarget;
+use pane_switcher_core::config::Config;
 use pane_switcher_core::model::{
     DeadSessionInput, PaneInput, PaneManifestInput, SessionInput, TabInput,
 };
 use pane_switcher_core::style::{ColorSpec, ThemePalette};
 use zellij_tile::prelude::{
-    BareKey, KeyModifier, KeyWithModifier, Mouse, PaletteColor, PaneId, PaneInfo, PaneManifest,
-    SessionInfo, Style, TabInfo,
+    BareKey, FloatingPaneCoordinates, KeyModifier, KeyWithModifier, Mouse, PaletteColor, PaneId,
+    PaneInfo, PaneManifest, SessionInfo, Style, TabInfo,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -55,6 +56,17 @@ pub enum MouseIntent {
     Ignored,
 }
 
+pub fn configured_floating_coordinates(config: &Config) -> Option<FloatingPaneCoordinates> {
+    FloatingPaneCoordinates::new(
+        None,
+        None,
+        Some(config.width.clone()),
+        Some(config.height.clone()),
+        None,
+        None,
+    )
+}
+
 pub fn mouse_intent(mouse: &Mouse, viewport_start: usize, viewport_end: usize) -> MouseIntent {
     match *mouse {
         Mouse::LeftClick(line, _) => {
@@ -81,6 +93,12 @@ pub fn key_intent(key: &KeyWithModifier) -> InputIntent {
     let has_ctrl = key.key_modifiers.contains(&KeyModifier::Ctrl);
     let has_other_modifier = key.key_modifiers.contains(&KeyModifier::Alt)
         || key.key_modifiers.contains(&KeyModifier::Super);
+
+    if let BareKey::Char(character) = key.bare_key {
+        if !character.is_control() && !character.is_ascii() {
+            return InputIntent::Insert(character);
+        }
+    }
 
     if has_ctrl && !has_other_modifier {
         if let BareKey::Char(character) = key.bare_key {

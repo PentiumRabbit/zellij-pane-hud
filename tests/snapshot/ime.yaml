@@ -1,0 +1,98 @@
+name: ime
+plugin: ../../dist/pane-switcher.wasm
+config:
+  icons: plain
+  row_format: "{title}  {command}"
+world:
+  current: demo
+  sessions:
+    - demo
+geometry:
+  rows: 12
+  cols: 60
+steps:
+  - action: grant_permissions
+  - action: mode_update
+    mode: normal
+    session: demo
+  - action: session_update
+    current: demo
+    sessions:
+      - demo
+  - action: tab_update
+    tabs:
+      - name: code
+        active: true
+        tiled: 1
+  - action: event_json
+    json: '{"CommandChanged":[{"Terminal":1},["zsh"],false,[]]}'
+  - action: event_json
+    json: '{"CommandChanged":[{"Terminal":2},["nvim","notes.md"],false,[]]}'
+  - action: event_json
+    json: |
+      {
+        "PaneUpdate": {
+          "panes": {
+            "0": [
+              {
+                "id": 1,
+                "is_plugin": false,
+                "is_focused": true,
+                "is_fullscreen": false,
+                "is_floating": false,
+                "is_suppressed": false,
+                "title": "的输入法测试",
+                "exited": false,
+                "exit_status": null,
+                "is_held": false,
+                "pane_x": 0,
+                "pane_content_x": 0,
+                "pane_y": 0,
+                "pane_content_y": 0,
+                "pane_rows": 12,
+                "pane_content_rows": 12,
+                "pane_columns": 30,
+                "pane_content_columns": 30,
+                "cursor_coordinates_in_pane": null,
+                "terminal_command": "zsh",
+                "plugin_url": null,
+                "is_selectable": true,
+                "index_in_pane_group": {},
+                "default_fg": null,
+                "default_bg": null
+              },
+              {
+                "id": 2,
+                "is_plugin": false,
+                "is_focused": false,
+                "is_fullscreen": false,
+                "is_floating": false,
+                "is_suppressed": false,
+                "title": "其他窗口",
+                "exited": false,
+                "exit_status": null,
+                "is_held": false,
+                "pane_x": 30,
+                "pane_content_x": 30,
+                "pane_y": 0,
+                "pane_content_y": 0,
+                "pane_rows": 12,
+                "pane_content_rows": 12,
+                "pane_columns": 30,
+                "pane_content_columns": 30,
+                "cursor_coordinates_in_pane": null,
+                "terminal_command": "nvim notes.md",
+                "plugin_url": null,
+                "is_selectable": true,
+                "index_in_pane_group": {},
+                "default_fg": null,
+                "default_bg": null
+              }
+            ]
+          }
+        }
+      }
+  - action: event_json
+    json: '{"Key":{"bare_key":{"Char":"的"},"key_modifiers":[]}}'
+  - action: event_json
+    json: '{"PastedText":"输入"}'

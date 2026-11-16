@@ -9,8 +9,9 @@ use pane_switcher_core::template::TemplateField;
 use zellij_tile::prelude::*;
 
 use crate::adapter::{
-    dead_session_inputs, key_intent, mouse_intent, navigation_action, pane_manifest_input,
-    session_input, tab_inputs, theme_palette, InputIntent, MouseIntent, NavigationAction,
+    configured_floating_coordinates, dead_session_inputs, key_intent, mouse_intent,
+    navigation_action, pane_manifest_input, session_input, tab_inputs, theme_palette, InputIntent,
+    MouseIntent, NavigationAction,
 };
 
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
@@ -27,6 +28,7 @@ pub struct PaneSwitcherPlugin {
     theme: ThemePalette,
     viewport_start: usize,
     viewport_end: usize,
+    floating_size_applied: bool,
 }
 
 #[derive(Default)]
@@ -48,6 +50,7 @@ impl ZellijPlugin for PaneSwitcherPlugin {
             EventType::CommandChanged,
             EventType::CwdChanged,
             EventType::Key,
+            EventType::PastedText,
             EventType::Mouse,
             EventType::Timer,
             EventType::PermissionRequestResult,
@@ -69,6 +72,7 @@ impl ZellijPlugin for PaneSwitcherPlugin {
             Event::PermissionRequestResult(PermissionStatus::Granted) => {
                 self.permissions_granted = true;
                 self.name_plugin_pane();
+                self.apply_configured_floating_size();
                 self.query_current_session_values();
                 self.schedule_spinner();
                 true
@@ -142,6 +146,10 @@ impl ZellijPlugin for PaneSwitcherPlugin {
                 }
             }
             Event::Key(key) => self.on_key(key),
+            Event::PastedText(text) => {
+                self.finder.insert_str(&text);
+                true
+            }
             Event::Mouse(mouse) => self.on_mouse(mouse),
             Event::Timer(_) => {
                 self.timer_scheduled = false;
@@ -220,6 +228,18 @@ impl PaneSwitcherPlugin {
     fn name_plugin_pane(&self) {
         let plugin_id = get_plugin_ids().plugin_id;
         rename_plugin_pane(plugin_id, PLUGIN_PANE_NAME);
+    }
+
+    fn apply_configured_floating_size(&mut self) {
+        if self.floating_size_applied {
+            return;
+        }
+        let Some(coordinates) = configured_floating_coordinates(self.finder.config()) else {
+            return;
+        };
+        let plugin_id = get_plugin_ids().plugin_id;
+        change_floating_panes_coordinates(vec![(PaneId::Plugin(plugin_id), coordinates)]);
+        self.floating_size_applied = true;
     }
 
     fn on_key(&mut self, key: KeyWithModifier) -> bool {
@@ -527,6 +547,33 @@ mod tests {
 
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Left)));
         assert!(!plugin.on_key(KeyWithModifier::new(BareKey::Right)));
+    }
+
+    #[test]
+    fn single_character_ime_commits_from_key_and_paste_are_preserved() {
+        let mut plugin = PaneSwitcherPlugin::default();
+
+        assert!(plugin.update(Event::Key(KeyWithModifier::new(BareKey::Char('的')))));
+        assert_eq!(plugin.finder.query(), "的");
+
+        assert!(plugin.update(Event::PastedText("的".into())));
+        assert_eq!(plugin.finder.query(), "的的");
+    }
+
+    #[test]
+    fn mixed_ime_input_sources_preserve_order_and_backspace_removes_one_cjk_character() {
+        let mut plugin = PaneSwitcherPlugin::default();
+
+        assert!(plugin.update(Event::PastedText("输".into())));
+        assert!(plugin.update(Event::Key(KeyWithModifier::new(BareKey::Char('入')))));
+        assert!(plugin.update(Event::PastedText("shuru".into())));
+        assert_eq!(plugin.finder.query(), "输入shuru");
+
+        assert!(plugin.update(Event::Key(KeyWithModifier::new(BareKey::Backspace))));
+        assert_eq!(plugin.finder.query(), "输入shur");
+
+        plugin.finder.rows();
+        assert_eq!(plugin.finder.rebuild_count(), 1);
     }
 
     #[test]

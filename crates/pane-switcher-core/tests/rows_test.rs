@@ -236,7 +236,7 @@ fn directory_display_keeps_only_the_last_two_components() {
 }
 
 #[test]
-fn command_display_keeps_program_and_last_two_arguments() {
+fn command_display_keeps_all_arguments_until_rendering_truncates_them() {
     let mut values = PaneValueCache::default();
     values.set_command(
         "work",
@@ -258,11 +258,14 @@ fn command_display_keeps_program_and_last_two_arguments() {
         .find(|row| row.pane.id == 2)
         .expect("pane row");
 
-    assert_eq!(row.command, "codex … --sandbox danger");
+    assert_eq!(
+        row.command,
+        "codex --full-auto --model gpt-5 --sandbox danger"
+    );
 }
 
 #[test]
-fn abbreviation_depths_are_configurable() {
+fn directory_depth_is_configurable_without_truncating_command_arguments() {
     let config = Config::from_map(&BTreeMap::from([
         ("dir_depth".into(), "3".into()),
         ("command_tail".into(), "1".into()),
@@ -294,11 +297,11 @@ fn abbreviation_depths_are_configurable() {
         .expect("pane row");
 
     assert_eq!(row.dir, "components/widgets/button");
-    assert_eq!(row.command, "codex … danger");
+    assert_eq!(row.command, "codex --full-auto --model gpt-5 danger");
 }
 
 #[test]
-fn invalid_abbreviation_values_use_two_level_defaults() {
+fn invalid_directory_abbreviation_uses_two_level_default() {
     let config = Config::from_map(&BTreeMap::from([
         ("dir_depth".into(), "0".into()),
         ("command_tail".into(), "not-a-number".into()),
@@ -331,7 +334,10 @@ fn invalid_abbreviation_values_use_two_level_defaults() {
         .expect("pane row");
 
     assert_eq!(row.dir, "widgets/button");
-    assert_eq!(row.command, "codex … --sandbox danger");
+    assert_eq!(
+        row.command,
+        "codex --full-auto --model gpt-5 --sandbox danger"
+    );
 }
 
 #[test]

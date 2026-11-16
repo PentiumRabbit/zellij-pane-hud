@@ -17,7 +17,7 @@ fi
 
 output_dir="$(mktemp -d /tmp/pane-switcher-snapshot.XXXXXX)"
 snapshot_log="$output_dir/plugin-commands.txt"
-for fixture in smoke template mouse; do
+for fixture in smoke template mouse ime; do
     zellij-plugin-snapshot "tests/snapshot/${fixture}.yaml" --out "$output_dir" |
         tee -a "$snapshot_log"
 done
@@ -25,22 +25,26 @@ done
 smoke="$output_dir/smoke.ansi.txt"
 template="$output_dir/template.ansi.txt"
 mouse="$output_dir/mouse.ansi.txt"
+ime="$output_dir/ime.ansi.txt"
 smoke_plain="$output_dir/smoke.txt"
 template_plain="$output_dir/template.txt"
 mouse_plain="$output_dir/mouse.txt"
+ime_plain="$output_dir/ime.txt"
 
 test -s "$smoke"
 test -s "$template"
 test -s "$mouse"
+test -s "$ime"
 perl -pe 's/\e\[[0-9;]*m//g' "$smoke" >"$smoke_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$template" >"$template_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$mouse" >"$mouse_plain"
+perl -pe 's/\e\[[0-9;]*m//g' "$ime" >"$ime_plain"
 
 grep -a -q "FIND" "$smoke"
 grep -q "src color renderer" "$smoke_plain"
 grep -q "workspace/notes" "$smoke_plain"
 grep -q "work/application" "$smoke_plain"
-grep -q "codex … --sandbox danger" "$smoke_plain"
+grep -q "codex --full-auto --model gpt-5 --sandbox danger" "$smoke_plain"
 grep -q "0-1" "$smoke_plain"
 grep -a -F -q $'\033[38;5;226;48;5;238m0-3' "$smoke"
 grep -a -F -q $'\033[38;5;154m◐' "$smoke"
@@ -53,6 +57,9 @@ grep -a -E -q "1;38;(2|5);" "$smoke"
 grep -a -E -q "48;(2|5);" "$smoke"
 grep -q "RenamePluginPane" "$snapshot_log"
 grep -q "Mouse" "$snapshot_log"
+grep -q "ChangeFloatingPanesCoordinates" "$snapshot_log"
+grep -q "width: Some(Percent(72))" "$snapshot_log"
+grep -q "height: Some(Percent(68))" "$snapshot_log"
 
 if grep -q "selected " "$smoke_plain"; then
     printf '%s\n' "Unexpected detail panel heading in smoke snapshot." >&2
@@ -73,5 +80,12 @@ grep -q "first row  zsh" "$mouse_plain"
 grep -q "second row  nvim notes.md" "$mouse_plain"
 grep -q "third row  bash" "$mouse_plain"
 grep -a -F -q $'\033[38;5;51;48;5;238msecond row' "$mouse"
+
+grep -q "FIND  › 的输入" "$ime_plain"
+grep -q "的输入法测试" "$ime_plain"
+if grep -q "其他窗口" "$ime_plain"; then
+    printf '%s\n' "IME query did not filter non-matching rows." >&2
+    exit 1
+fi
 
 printf 'Snapshots: %s\n' "$output_dir"

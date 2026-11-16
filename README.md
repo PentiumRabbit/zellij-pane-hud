@@ -6,7 +6,7 @@
 
 A floating, search-first pane picker for Zellij. Every terminal pane appears on
 one compact row with progress, command type, tab-pane ID, title, abbreviated
-directory, and abbreviated command.
+directory, and command arguments.
 
 Type to fuzzy-filter the pane list. The best-scoring match is selected as you
 type, so Enter immediately focuses the top result in the current or another
@@ -27,8 +27,10 @@ FIND  › sr
   panel.
 - Configurable row templates with title, relative directory, progress, icon,
   session, tab, tab ID, command, and pane ID fields.
-- Configurable directory and command abbreviation while retaining full-text
-  search.
+- Configurable floating-window dimensions using terminal percentages or fixed
+  rows and columns.
+- Complete command arguments are displayed when they fit; long rows are
+  ellipsized only at render time.
 - Template-scoped fuzzy or substring search. Hidden fields do not participate
   in matching. Fuzzy queries may span multiple visible fields.
 - UTF-8-safe match highlighting: matched characters are bold yellow.
@@ -72,15 +74,14 @@ Supported fields:
 | `{session}`  | Live session name                            |
 | `{tab}`      | Tab name                                     |
 | `{tab_id}`   | Stable Zellij tab ID                         |
-| `{command}`  | Program and last `command_tail` arguments    |
+| `{command}`  | Program and command arguments                |
 | `{pane_id}`  | Numeric terminal pane ID                     |
 
 Only text fields present in the active format are searchable. The complete
 default format therefore searches tab ID, pane ID, title, relative directory,
 and command. Removing a field also removes it from the search corpus.
-Abbreviated directories and commands remain fully searchable. Cross-field
-matching preserves visible literals, so `3-7` matches the default `tab-pane`
-pair.
+Abbreviated directories and full commands remain searchable. Cross-field matching
+preserves visible literals, so `3-7` matches the default `tab-pane` pair.
 
 `{{` and `}}` emit literal braces. Unknown or unterminated placeholders remain
 literal. An empty format falls back to the default.
@@ -188,8 +189,9 @@ plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+        width "72%"
+        height "68%"
         dir_depth "2"
-        command_tail "2"
         colors {
             "{title}" "red"
             "{tab_id}-{pane_id}" "yellow"
@@ -257,6 +259,7 @@ are not registered by this plugin.
 | `Ctrl+Shift+e`              | Open or focus the switcher    |
 | `Ctrl+o`, then `g`          | Open or focus the fallback    |
 | Printable text              | Edit the search query         |
+| IME-committed text / paste  | Insert the committed UTF-8 text |
 | Backspace                   | Delete one character          |
 | `Ctrl+w`                    | Delete the previous word      |
 | `Ctrl+u`                    | Clear the query               |
@@ -276,8 +279,11 @@ Unknown keys are ignored. Invalid values fall back per field.
 ```kdl
 scope "all"                    // current | all
 row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+width "72%"                    // percentage of terminal columns
+height "68%"                   // percentage of terminal rows
 dir_depth "2"                  // path components to display
-command_tail "2"               // trailing arguments to display
+// width "120"                 // fixed 120 columns
+// height "40"                 // fixed 40 rows
 colors {
     "{title}" "red"
     "{tab_id}-{pane_id}" "yellow"
@@ -294,9 +300,9 @@ spinner_fps "4"
 follow_current_session "true"
 ```
 
-Legacy tree/detail keys are still accepted so existing configs do not fail,
-but they no longer affect layout or search. Use `row_format` to choose visible
-and searchable fields.
+Legacy tree/detail keys and `command_tail` are still accepted so existing
+configs do not fail, but they no longer affect layout or search. Use
+`row_format` to choose visible and searchable fields.
 
 `pane-switcher` can coexist with `zellij-hud`. Keep both plugin aliases and load
 only the plugins that need background activation; the pane switcher itself is
@@ -313,8 +319,14 @@ pane/session focus.
   panes, and resurrectable sessions without live panes are excluded.
 - Zellij 0.45.1 does not expose plugin-defined global shortcuts, so launching
   remains a user-configured Zellij keybinding.
-- Zellij 0.45.1 `LaunchOrFocusPlugin` does not provide width or height options;
-  the native floating-pane size is used.
+- The plugin applies `width` and `height` after permissions are granted.
+  Values ending in `%` are percentages; integer values are fixed terminal
+  rows/columns.
+- Committed IME text is supported, but inline pinyin preedit and the candidate
+  window are owned by the terminal and input method rather than the plugin.
+- Zellij 0.45.1's plugin key decoder truncates non-ASCII `Key::Char` values to
+  `u8`. The release build applies a narrow, protocol-compatible patch to
+  `zellij-utils` so single CJK character commits are preserved.
 - Zellij owns the floating pane frame. The plugin renders only content and does
   not draw a second inner border.
 

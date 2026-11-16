@@ -154,7 +154,7 @@ fn build_row(
         .or_else(|| pane.initial_command.clone())
         .filter(|command| !command.trim().is_empty())
         .unwrap_or_else(|| "?".to_owned());
-    let command = abbreviate_command(&full_command, config.command_tail);
+    let command = display_command(&full_command);
     let full_dir = relative_dir(values.cwd(&session.name, pane.id), base_cwd);
     let dir = abbreviate_dir(&full_dir, config.dir_depth);
 
@@ -222,23 +222,19 @@ fn abbreviate_dir(dir: &str, depth: usize) -> String {
     abbreviated.display().to_string()
 }
 
-fn abbreviate_command(command: &str, tail: usize) -> String {
-    let parts = command.split_whitespace().collect::<Vec<_>>();
-    let Some((program, arguments)) = parts.split_first() else {
+fn display_command(command: &str) -> String {
+    let mut parts = command.split_whitespace();
+    let Some(program) = parts.next() else {
         return command.to_owned();
     };
     let program = Path::new(program)
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or(program);
-    if arguments.len() <= tail {
-        return std::iter::once(program)
-            .chain(arguments.iter().copied())
-            .collect::<Vec<_>>()
-            .join(" ");
-    }
-    let tail_start = arguments.len() - tail;
-    format!("{} … {}", program, arguments[tail_start..].join(" "))
+    std::iter::once(program)
+        .chain(parts)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn apply_search(row: &mut Row, config: &Config, normalized_query: &str) -> bool {

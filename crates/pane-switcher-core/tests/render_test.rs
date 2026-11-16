@@ -513,6 +513,45 @@ fn long_command_does_not_hide_the_pane_id() {
 }
 
 #[test]
+fn full_command_is_only_ellipsized_when_the_row_width_is_insufficient() {
+    let command = "codex --full-auto --model gpt-5 --sandbox danger";
+    let rows = Rows {
+        rows: vec![row(1, "app", ".", command)],
+    };
+    let wide = render_frame(
+        &rows,
+        Some(0),
+        120,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+    let narrow = render_frame(
+        &rows,
+        Some(0),
+        52,
+        12,
+        "",
+        &Config::default(),
+        1,
+        RenderOptions {
+            color: false,
+            ..RenderOptions::default()
+        },
+    );
+
+    assert!(wide.lines[2].contains(command));
+    assert!(narrow.lines[2].contains("codex --full-auto"));
+    assert!(!narrow.lines[2].contains(command));
+    assert!(narrow.lines[2].contains('…'));
+}
+
+#[test]
 fn every_line_is_unicode_width_safe_and_the_frame_is_exact_height() {
     let config = Config::default();
     let rows = Rows {

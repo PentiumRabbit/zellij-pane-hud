@@ -4,7 +4,6 @@ config:
   icons: nerd
   row_format: "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
   dir_depth: "2"
-  command_tail: "2"
   colors: |
     "{tab_id}-{pane_id}" "yellow"
     "{title}" "red"

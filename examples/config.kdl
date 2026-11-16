@@ -4,8 +4,9 @@ plugins {
     pane-switcher location="https://github.com/pr-g/zellij-pane-switcher/releases/latest/download/pane-switcher.wasm" {
         scope "all"
         row_format "{progress} {icon} {tab_id}-{pane_id}  {title}  {dir}  {command}"
+        width "72%"
+        height "68%"
         dir_depth "2"
-        command_tail "2"
         colors {
             "{title}" "red"
             "{tab_id}-{pane_id}" "yellow"

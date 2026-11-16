@@ -108,6 +108,18 @@ struct MatchResult {
 `positions` are UTF-8 character indices, not byte offsets. This lets the
 renderer split `&str` safely and highlight only matched characters.
 
+Committed IME text may arrive either as ordinary key events or as one
+`PastedText` event when the host terminal uses bracketed paste for composition
+commits. Both paths append UTF-8 text to the same query model; preedit and
+candidate rendering remain terminal-owned.
+
+Zellij 0.45.1 serializes a character key as an `i32`, but its plugin-side
+decoder casts the value through `u8`. This corrupts every non-ASCII
+`Key::Char`, including a single committed CJK character. The host already sends
+the complete Unicode scalar value, so the WASM build applies a
+protocol-compatible decoder patch to `zellij-utils`; `PastedText` remains
+unaffected because it already carries UTF-8 strings.
+
 Scoring behavior:
 
 - fuzzy mode scans a query as an ordered subsequence;
@@ -302,5 +314,6 @@ Regressions exercise:
 - No resurrectable session rows because they have no live pane target.
 - No nested split topology visualization.
 - An open plugin instance is not hot-swapped when a newer release appears.
-- Native floating-pane size only; width/height are not configurable through
-  `LaunchOrFocusPlugin` in 0.45.1.
+- `LaunchOrFocusPlugin` has no width/height fields in 0.45.1, but plugins can
+  apply their own dimensions after permission using
+  `change_floating_panes_coordinates`.
