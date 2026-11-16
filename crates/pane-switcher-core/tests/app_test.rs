@@ -221,6 +221,46 @@ fn flattened_pane_navigation_keeps_session_tab_and_pane_identity() {
 }
 
 #[test]
+fn selecting_a_global_row_index_refreshes_and_keeps_the_pane_identity() {
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![
+        pane(1, false),
+        pane(2, false),
+        pane(3, false),
+    ]));
+
+    finder.select_index(1);
+
+    assert_eq!(finder.selection().index(), 1);
+    assert_eq!(
+        finder.selection().selected_key(),
+        Some(&NodeKey::Pane {
+            session: "work".into(),
+            tab_id: 42,
+            pane_id: 2,
+        })
+    );
+}
+
+#[test]
+fn selecting_an_out_of_range_index_keeps_the_current_selection() {
+    let mut finder = Finder::new(Config::default());
+    finder.set_snapshot(world_with(vec![pane(1, true), pane(2, false)]));
+    finder.refresh();
+
+    assert!(!finder.select_index(9));
+
+    assert_eq!(
+        finder.selection().selected_key(),
+        Some(&NodeKey::Pane {
+            session: "work".into(),
+            tab_id: 42,
+            pane_id: 1,
+        })
+    );
+}
+
+#[test]
 fn repeated_render_and_selection_do_not_rebuild_search_rows() {
     let panes = (1..=2_000)
         .map(|id| pane(id, id == 1_000))

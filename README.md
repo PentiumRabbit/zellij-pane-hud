@@ -18,7 +18,7 @@ FIND  › sr
 ◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
 ✓ 󰈙 3-2  editor notes   workspace/notes  nvim
 ✕ $ 4-3  old shell      tmp/elsewhere    zsh
-↑↓/Tab move  Shift+Tab back  Enter jump  Esc close
+↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close
 ```
 
 ## Features
@@ -52,6 +52,8 @@ FIND  › sr
   the full WASM path.
 - Viewport-bounded rendering and cached search rows. Selection movement,
   rendering, and spinner frames do not rebuild search results.
+- Click any visible pane row to focus it immediately; the mouse wheel moves
+  the selection through the filtered list.
 
 ## Default row
 
@@ -248,9 +250,9 @@ See [`examples/config.kdl`](examples/config.kdl) for a complete example.
 Earlier `Ctrl+Space` and `Ctrl+g` candidates conflicted with the local setup and
 are not registered by this plugin.
 
-## Keyboard controls
+## Controls
 
-| Key                         | Action                        |
+| Input                       | Action                        |
 | :-------------------------- | :---------------------------- |
 | `Ctrl+Shift+e`              | Open or focus the switcher    |
 | `Ctrl+o`, then `g`          | Open or focus the fallback    |
@@ -262,6 +264,8 @@ are not registered by this plugin.
 | Down / `Ctrl+n` / `Tab`     | Select the next row           |
 | PageUp / PageDown           | Move by ten rows              |
 | Enter                       | Focus the selected pane       |
+| Left-click a pane row       | Focus that pane and close     |
+| Mouse wheel up / down       | Select previous / next row    |
 | Esc                         | Close without navigation      |
 | Left / Right                | No action                     |
 

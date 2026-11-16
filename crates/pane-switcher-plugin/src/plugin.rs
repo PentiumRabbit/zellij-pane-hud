@@ -9,8 +9,8 @@ use pane_switcher_core::template::TemplateField;
 use zellij_tile::prelude::*;
 
 use crate::adapter::{
-    dead_session_inputs, key_intent, navigation_action, pane_manifest_input, session_input,
-    tab_inputs, theme_palette, InputIntent, NavigationAction,
+    dead_session_inputs, key_intent, mouse_intent, navigation_action, pane_manifest_input,
+    session_input, tab_inputs, theme_palette, InputIntent, MouseIntent, NavigationAction,
 };
 
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
@@ -25,6 +25,8 @@ pub struct PaneSwitcherPlugin {
     last_reported_cursor: Option<Option<(usize, usize)>>,
     pane_query_failures: BTreeMap<(String, u32), PaneQueryFailures>,
     theme: ThemePalette,
+    viewport_start: usize,
+    viewport_end: usize,
 }
 
 #[derive(Default)]
@@ -46,6 +48,7 @@ impl ZellijPlugin for PaneSwitcherPlugin {
             EventType::CommandChanged,
             EventType::CwdChanged,
             EventType::Key,
+            EventType::Mouse,
             EventType::Timer,
             EventType::PermissionRequestResult,
             EventType::Visible,
@@ -139,6 +142,7 @@ impl ZellijPlugin for PaneSwitcherPlugin {
                 }
             }
             Event::Key(key) => self.on_key(key),
+            Event::Mouse(mouse) => self.on_mouse(mouse),
             Event::Timer(_) => {
                 self.timer_scheduled = false;
                 if self.visible && self.finder.has_running_visible_pane() {
@@ -196,6 +200,8 @@ impl ZellijPlugin for PaneSwitcherPlugin {
         if self.should_report_cursor(frame.cursor) {
             show_cursor(frame.cursor);
         }
+        self.viewport_start = frame.viewport_start;
+        self.viewport_end = frame.viewport_end;
         let mut stdout = std::io::stdout().lock();
         let _ = write!(stdout, "\u{1b}[2J\u{1b}[H{}", frame.lines.join("\r\n"));
         let _ = stdout.flush();
@@ -237,6 +243,27 @@ impl PaneSwitcherPlugin {
             InputIntent::Ignored => return false,
         }
         true
+    }
+
+    fn on_mouse(&mut self, mouse: Mouse) -> bool {
+        match mouse_intent(&mouse, self.viewport_start, self.viewport_end) {
+            MouseIntent::ActivateRow(index) => {
+                if !self.finder.select_index(index) {
+                    return false;
+                }
+                self.navigate();
+                true
+            }
+            MouseIntent::Up => {
+                self.finder.selection_up();
+                true
+            }
+            MouseIntent::Down => {
+                self.finder.selection_down();
+                true
+            }
+            MouseIntent::Ignored => false,
+        }
     }
 
     fn navigate(&mut self) {

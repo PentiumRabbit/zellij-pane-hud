@@ -20,12 +20,14 @@ It is not a permanent sidebar and does not render a session/tab tree.
 1. The user opens the configured floating plugin.
 2. Every live selectable terminal pane is represented by exactly one row.
 3. Typing filters rows using only text fields present in `row_format`.
-4. Up/Down, `Ctrl+p`/`Ctrl+n`, Tab, and Shift+Tab move through the flat
-   result list.
-5. Left/Right are ignored.
-6. Enter focuses the selected pane, closes the HUD, and switches sessions when
+4. Up/Down, `Ctrl+p`/`Ctrl+n`, Tab, Shift+Tab, and the mouse wheel move through
+   the flat result list.
+5. A left click on a visible pane row selects and focuses that pane, closing
+   the HUD and switching sessions when necessary.
+6. Left/Right are ignored.
+7. Enter focuses the selected pane, closes the HUD, and switches sessions when
    necessary.
-7. Esc closes without navigation.
+8. Esc closes without navigation.
 
 The focused pane is selected when no query is active and
 `follow_current_session=true`. A non-whitespace query selects the top-ranked

@@ -4,12 +4,12 @@ use pane_switcher_core::app::NavigationTarget;
 use pane_switcher_core::model::NodeKey;
 use pane_switcher_core::style::{ColorSpec, ThemePalette};
 use pane_switcher_plugin::adapter::{
-    key_intent, navigation_action, pane_manifest_input, session_input, tab_inputs, theme_palette,
-    InputIntent, NavigationAction,
+    key_intent, mouse_intent, navigation_action, pane_manifest_input, session_input, tab_inputs,
+    theme_palette, InputIntent, MouseIntent, NavigationAction,
 };
 use zellij_tile::prelude::{
-    BareKey, KeyWithModifier, PaletteColor, PaneId, PaneInfo, PaneManifest, SessionInfo, Style,
-    TabInfo,
+    BareKey, KeyWithModifier, Mouse, PaletteColor, PaneId, PaneInfo, PaneManifest, SessionInfo,
+    Style, TabInfo,
 };
 
 #[test]
@@ -193,6 +193,32 @@ fn tab_keys_move_selection_like_down_and_up() {
         key_intent(&KeyWithModifier::new(BareKey::Tab).with_shift_modifier()),
         InputIntent::Up
     );
+}
+
+#[test]
+fn mouse_clicks_map_content_lines_to_visible_rows() {
+    assert_eq!(
+        mouse_intent(&Mouse::LeftClick(2, 10), 5, 8),
+        MouseIntent::ActivateRow(5)
+    );
+    assert_eq!(
+        mouse_intent(&Mouse::LeftClick(4, 10), 5, 8),
+        MouseIntent::ActivateRow(7)
+    );
+    assert_eq!(
+        mouse_intent(&Mouse::LeftClick(1, 10), 5, 8),
+        MouseIntent::Ignored
+    );
+    assert_eq!(
+        mouse_intent(&Mouse::LeftClick(5, 10), 5, 8),
+        MouseIntent::Ignored
+    );
+}
+
+#[test]
+fn mouse_wheel_moves_selection_up_and_down() {
+    assert_eq!(mouse_intent(&Mouse::ScrollUp(1), 0, 0), MouseIntent::Up);
+    assert_eq!(mouse_intent(&Mouse::ScrollDown(1), 0, 0), MouseIntent::Down);
 }
 
 #[test]

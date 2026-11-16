@@ -16,7 +16,7 @@ FIND  › sr
 ◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
 ✓ 󰈙 3-2  editor notes   workspace/notes  nvim
 ✕ $ 4-3  old shell      tmp/elsewhere    zsh
-↑↓/Tab move  Shift+Tab back  Enter jump  Esc close
+↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close
 ```
 
 ## 功能
@@ -37,6 +37,7 @@ FIND  › sr
 - 搜索行、进度图标、类型图标、字段和选中背景使用不同的语义颜色。
 - 渲染只处理当前视口，不会为所有行生成终端输出。
 - 搜索行缓存会复用于选择移动、重新渲染和动画帧。
+- 鼠标左键单击可见 Pane 行即可立即聚焦；滚轮上下可移动当前选择。
 
 ## 默认行
 
@@ -169,9 +170,9 @@ https://github.com/pr-g/zellij-pane-switcher/releases/download/v0.1.5/pane-switc
 file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 ```
 
-## 快捷键
+## 操作
 
-| 按键                        | 操作                    |
+| 输入                        | 操作                    |
 | :-------------------------- | :---------------------- |
 | `Ctrl+Shift+e`              | 打开或聚焦 Pane 切换器  |
 | `Ctrl+o`，然后 `g`          | 备用入口                |
@@ -183,10 +184,12 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 | Down / `Ctrl+n` / `Tab`     | 选择下一条              |
 | PageUp / PageDown           | 按十行移动              |
 | Enter                       | 聚焦选中 Pane 并关闭    |
+| 左键单击 Pane 行            | 聚焦该 Pane 并关闭      |
+| 鼠标滚轮上 / 下             | 选择上一条 / 下一条     |
 | Esc                         | 关闭，不跳转            |
 | Left / Right                | 不执行操作              |
 
-快捷键都是普通 Zellij KDL，可以按自己的环境修改。
+启动快捷键都是普通 Zellij KDL，可以按自己的环境修改。
 
 ## 配置项
 

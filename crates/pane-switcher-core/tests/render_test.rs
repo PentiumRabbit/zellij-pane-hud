@@ -404,6 +404,8 @@ fn footer_documents_tab_navigation() {
 
     assert!(footer.contains("Tab"));
     assert!(footer.contains("Shift+Tab"));
+    assert!(footer.contains("click"));
+    assert!(footer.contains("wheel"));
 }
 
 #[test]
@@ -561,6 +563,28 @@ fn viewport_rendering_stays_bounded_for_ten_thousand_rows() {
     assert!(!rendered.contains("pane-1 "));
     assert!(!rendered.contains("pane-5000"));
     assert_line_widths(&frame.lines, 80);
+}
+
+#[test]
+fn render_frame_reports_the_visible_row_range() {
+    let rows = Rows {
+        rows: (1..=20)
+            .map(|id| row(id, &format!("pane-{id}"), ".", "zsh"))
+            .collect(),
+    };
+    let frame = render_frame(
+        &rows,
+        Some(9),
+        80,
+        6,
+        "",
+        &Config::default(),
+        0,
+        RenderOptions::default(),
+    );
+
+    assert_eq!(frame.viewport_start, 7);
+    assert_eq!(frame.viewport_end, 10);
 }
 
 #[test]

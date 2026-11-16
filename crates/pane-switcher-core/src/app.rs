@@ -205,6 +205,16 @@ impl Finder {
         self.rows.rows.get(self.selection.index())
     }
 
+    pub fn select_index(&mut self, index: usize) -> bool {
+        self.refresh();
+        let Some(row) = self.rows.rows.get(index) else {
+            return false;
+        };
+        let key = row.key.clone();
+        self.selection.select_key(&self.rows, &key);
+        true
+    }
+
     pub fn refresh(&mut self) {
         if !self.dirty {
             return;

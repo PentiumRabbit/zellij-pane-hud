@@ -6,7 +6,7 @@ use pane_switcher_core::model::{
 };
 use pane_switcher_core::style::{ColorSpec, ThemePalette};
 use zellij_tile::prelude::{
-    BareKey, KeyModifier, KeyWithModifier, PaletteColor, PaneId, PaneInfo, PaneManifest,
+    BareKey, KeyModifier, KeyWithModifier, Mouse, PaletteColor, PaneId, PaneInfo, PaneManifest,
     SessionInfo, Style, TabInfo,
 };
 
@@ -45,6 +45,36 @@ pub enum InputIntent {
     Enter,
     Close,
     Ignored,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MouseIntent {
+    ActivateRow(usize),
+    Up,
+    Down,
+    Ignored,
+}
+
+pub fn mouse_intent(mouse: &Mouse, viewport_start: usize, viewport_end: usize) -> MouseIntent {
+    match *mouse {
+        Mouse::LeftClick(line, _) => {
+            let Ok(line) = usize::try_from(line) else {
+                return MouseIntent::Ignored;
+            };
+            let Some(offset) = line.checked_sub(2) else {
+                return MouseIntent::Ignored;
+            };
+            let index = viewport_start.saturating_add(offset);
+            if index < viewport_end {
+                MouseIntent::ActivateRow(index)
+            } else {
+                MouseIntent::Ignored
+            }
+        }
+        Mouse::ScrollUp(_) => MouseIntent::Up,
+        Mouse::ScrollDown(_) => MouseIntent::Down,
+        _ => MouseIntent::Ignored,
+    }
 }
 
 pub fn key_intent(key: &KeyWithModifier) -> InputIntent {

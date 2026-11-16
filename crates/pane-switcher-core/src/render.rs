@@ -31,6 +31,8 @@ impl Default for RenderOptions {
 pub struct RenderFrame {
     pub lines: Vec<String>,
     pub cursor: Option<(usize, usize)>,
+    pub viewport_start: usize,
+    pub viewport_end: usize,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -74,7 +76,7 @@ pub fn render_frame(
     }
     lines.push(render_text_line(
         fitted_text(
-            " ↑↓/Tab move  Shift+Tab back  Enter jump  Esc close ",
+            " ↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close ",
             cols,
             BORDER_COLOR,
         ),
@@ -82,7 +84,12 @@ pub fn render_frame(
     ));
     lines.truncate(height);
 
-    RenderFrame { lines, cursor }
+    RenderFrame {
+        lines,
+        cursor,
+        viewport_start: start,
+        viewport_end: end,
+    }
 }
 
 fn row_spans(row: &Row, config: &Config, spinner_tick: u64) -> Vec<StyledSpan> {

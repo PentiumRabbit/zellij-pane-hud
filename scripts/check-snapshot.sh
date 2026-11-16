@@ -17,20 +17,24 @@ fi
 
 output_dir="$(mktemp -d /tmp/pane-switcher-snapshot.XXXXXX)"
 snapshot_log="$output_dir/plugin-commands.txt"
-for fixture in smoke template; do
+for fixture in smoke template mouse; do
     zellij-plugin-snapshot "tests/snapshot/${fixture}.yaml" --out "$output_dir" |
         tee -a "$snapshot_log"
 done
 
 smoke="$output_dir/smoke.ansi.txt"
 template="$output_dir/template.ansi.txt"
+mouse="$output_dir/mouse.ansi.txt"
 smoke_plain="$output_dir/smoke.txt"
 template_plain="$output_dir/template.txt"
+mouse_plain="$output_dir/mouse.txt"
 
 test -s "$smoke"
 test -s "$template"
+test -s "$mouse"
 perl -pe 's/\e\[[0-9;]*m//g' "$smoke" >"$smoke_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$template" >"$template_plain"
+perl -pe 's/\e\[[0-9;]*m//g' "$mouse" >"$mouse_plain"
 
 grep -a -q "FIND" "$smoke"
 grep -q "src color renderer" "$smoke_plain"
@@ -43,10 +47,12 @@ grep -a -F -q $'\033[38;5;154m◐' "$smoke"
 grep -a -F -q $'\033[38;5;226m✓' "$smoke"
 grep -a -F -q $'\033[38;5;124;48;5;238m✕' "$smoke"
 grep -q "↑↓/Tab move  Shift+Tab back" "$smoke_plain"
+grep -q "Enter/click jump  wheel scroll" "$smoke_plain"
 grep -a -E -q "38;(2|5);" "$smoke"
 grep -a -E -q "1;38;(2|5);" "$smoke"
 grep -a -E -q "48;(2|5);" "$smoke"
 grep -q "RenamePluginPane" "$snapshot_log"
+grep -q "Mouse" "$snapshot_log"
 
 if grep -q "selected " "$smoke_plain"; then
     printf '%s\n' "Unexpected detail panel heading in smoke snapshot." >&2
@@ -62,5 +68,10 @@ if grep -q "selected " "$template_plain"; then
     printf '%s\n' "Unexpected detail panel heading in template snapshot." >&2
     exit 1
 fi
+
+grep -q "first row  zsh" "$mouse_plain"
+grep -q "second row  nvim notes.md" "$mouse_plain"
+grep -q "third row  bash" "$mouse_plain"
+grep -a -F -q $'\033[38;5;51;48;5;238msecond row' "$mouse"
 
 printf 'Snapshots: %s\n' "$output_dir"
