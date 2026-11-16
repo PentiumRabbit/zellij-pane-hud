@@ -11,11 +11,11 @@
 或其他活动会话中最相关的结果。
 
 ```text
-FIND  ›
-──────────────────────────────────────────────────────────────
-◓ ❉ 3-1 src renderer  src/ui  codex --full-auto
-✓ $ 3-2 shell  .  zsh
-✕ 󰈙 4-3 old editor  workspace  nvim notes.md
+FIND  › sr
+──────────────────────────────────────────────────────────────────────────────
+◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
+✓ 󰈙 3-2  editor notes   workspace/notes  nvim
+✕ $ 4-3  old shell      tmp/elsewhere    zsh
 ↑↓/Tab move  Shift+Tab back  Enter jump  Esc close
 ```
 
@@ -46,27 +46,27 @@ FIND  ›
 
 支持的模板字段：
 
-| 字段 | 含义 |
-|---|---|
-| `{progress}` | 运行、空闲、已退出或未知状态 |
-| `{icon}` | Pane 或命令类型图标 |
-| `{title}` | Pane 标题；为空时显示 `pane <id>` |
-| `{dir}` | 相对于当前聚焦 Pane 的目录，默认只显示最后两级 |
-| `{session}` | 活动会话名称 |
-| `{tab}` | Tab 名称 |
-| `{tab_id}` | Zellij 内部稳定 Tab ID |
-| `{command}` | 程序名和最后两个命令参数 |
-| `{pane_id}` | 数字 Pane ID |
+| 字段         | 含义                             |
+| :----------- | :------------------------------- |
+| `{progress}` | 运行中、绿色对号、红色叉号或 `?` |
+| `{icon}`     | Pane 或命令类型图标              |
+| `{title}`    | Pane 标题，空时使用 `pane <id>`  |
+| `{dir}`      | 相对 CWD，保留 `dir_depth` 级    |
+| `{session}`  | 活动会话名称                     |
+| `{tab}`      | Tab 名称                         |
+| `{tab_id}`   | Zellij 稳定 Tab ID               |
+| `{command}`  | 程序和最后 `command_tail` 个参数 |
+| `{pane_id}`  | 数字终端 Pane ID                 |
 
 默认字段颜色：
 
-| 字段 | 颜色 |
-|---|---|
-| `{title}` | 青色 |
-| `{dir}` | 蓝色 |
-| `{session}` | 洋红色 |
-| `{tab}` | 橙色 |
-| `{command}` | 绿色 |
+| 字段                     | 颜色   |
+| :----------------------- | :----- |
+| `{title}`                | 青色   |
+| `{dir}`                  | 蓝色   |
+| `{session}`              | 洋红色 |
+| `{tab}`                  | 橙色   |
+| `{command}`              | 绿色   |
 | `{tab_id}` / `{pane_id}` | 暗灰色 |
 
 可以用统一的嵌套 `colors` 块覆盖模板片段和进度状态颜色：
@@ -171,20 +171,20 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 
 ## 快捷键
 
-| 按键 | 操作 |
-|---|---|
-| `Ctrl+Shift+e` | 直接打开或聚焦 Pane 切换器 |
-| `Ctrl+o`，然后 `g` | 备用入口 |
-| 可打印文字 | 编辑搜索词 |
-| Backspace | 删除一个字符 |
-| `Ctrl+w` | 删除前一个词 |
-| `Ctrl+u` | 清空搜索词 |
-| Up / `Ctrl+p` / `Shift+Tab` | 选择上一条 |
-| Down / `Ctrl+n` / `Tab` | 选择下一条 |
-| PageUp / PageDown | 按十行移动 |
-| Enter | 聚焦选中 Pane 并关闭 |
-| Esc | 关闭，不跳转 |
-| Left / Right | 不执行操作 |
+| 按键                        | 操作                    |
+| :-------------------------- | :---------------------- |
+| `Ctrl+Shift+e`              | 打开或聚焦 Pane 切换器  |
+| `Ctrl+o`，然后 `g`          | 备用入口                |
+| 可打印文字                  | 编辑搜索词              |
+| Backspace                   | 删除一个字符            |
+| `Ctrl+w`                    | 删除前一个词            |
+| `Ctrl+u`                    | 清空搜索词              |
+| Up / `Ctrl+p` / `Shift+Tab` | 选择上一条              |
+| Down / `Ctrl+n` / `Tab`     | 选择下一条              |
+| PageUp / PageDown           | 按十行移动              |
+| Enter                       | 聚焦选中 Pane 并关闭    |
+| Esc                         | 关闭，不跳转            |
+| Left / Right                | 不执行操作              |
 
 快捷键都是普通 Zellij KDL，可以按自己的环境修改。
 

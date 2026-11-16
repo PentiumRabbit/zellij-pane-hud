@@ -53,17 +53,17 @@ Progress comes first so running state is the easiest attribute to scan.
 
 The template is parsed once at plugin load into literal and field parts.
 
-| Placeholder | Value |
-|---|---|
-| `{progress}` | Running spinner, idle, exited, or unknown progress |
-| `{icon}` | Pane or command category icon |
-| `{title}` | Pane title, or `pane <id>` when empty |
-| `{dir}` | Last `dir_depth` components of the CWD relative to the focused pane CWD |
-| `{session}` | Live session name |
-| `{tab}` | Tab name |
-| `{tab_id}` | Stable numeric Zellij tab ID |
-| `{command}` | Program basename and the last `command_tail` arguments |
-| `{pane_id}` | Numeric terminal pane ID |
+| Placeholder  | Value                                         |
+| :----------- | :-------------------------------------------- |
+| `{progress}` | Running spinner, green check, red cross, `?`  |
+| `{icon}`     | Pane or command category icon                 |
+| `{title}`    | Pane title, or `pane <id>` when empty         |
+| `{dir}`      | Relative CWD, last `dir_depth` components     |
+| `{session}`  | Live session name                             |
+| `{tab}`      | Tab name                                      |
+| `{tab_id}`   | Stable numeric Zellij tab ID                  |
+| `{command}`  | Program and last `command_tail` arguments     |
+| `{pane_id}`  | Numeric terminal pane ID                      |
 
 Rules:
 
@@ -78,13 +78,13 @@ Rules:
 
 Text fields use semantic theme colors:
 
-| Field | Color |
-|---|---|
-| `{title}` | Cyan |
-| `{dir}` | Blue |
-| `{session}` | Magenta |
-| `{tab}` | Orange |
-| `{command}` | Green |
+| Field                    | Color     |
+| :----------------------- | :-------- |
+| `{title}`                | Cyan      |
+| `{dir}`                  | Blue      |
+| `{session}`              | Magenta   |
+| `{tab}`                  | Orange    |
+| `{command}`              | Green     |
 | `{tab_id}` / `{pane_id}` | Dark gray |
 
 Search matches override the field base color with bold yellow. The selected
@@ -193,25 +193,25 @@ style.
 
 Progress:
 
-| State | Glyph | Color |
-|---|---|---|
-| Running | four-frame spinner | cyan |
-| Idle shell | `✓` | green |
-| Exited | `✕` | red |
-| Unknown | `?` | dark gray |
+| State      | Glyph              | Color     |
+| :--------- | :----------------- | :-------- |
+| Running    | four-frame spinner | Cyan      |
+| Idle shell | `✓`                | Green     |
+| Exited     | `✕`                | Red       |
+| Unknown    | `?`                | Dark gray |
 
 Command category:
 
-| Category | Color |
-|---|---|
-| focused | green |
-| shell | green |
-| command | cyan |
-| Codex | magenta |
-| Claude | orange |
-| editor | blue |
-| floating/fullscreen/stacked | blue |
-| unknown | dark gray |
+| Category                        | Color     |
+| :------------------------------ | :-------- |
+| Focused                         | Green     |
+| Shell                           | Green     |
+| Command                         | Cyan      |
+| Codex                           | Magenta   |
+| Claude                          | Orange    |
+| Editor                          | Blue      |
+| Floating / fullscreen / stacked | Blue      |
+| Unknown                         | Dark gray |
 
 Every progress and command-category glyph occupies exactly one terminal display
 column in both Nerd and plain modes, so text fields stay vertically aligned.

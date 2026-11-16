@@ -13,14 +13,12 @@ type, so Enter immediately focuses the top result in the current or another
 live session.
 
 ```text
-╭─ FIND ───────────────────────────────────────────────╮
-│ › sr                                          Esc   │
-├──────────────────────────────────────────────────────┤
-│ ◓ ❉ 3-1 src renderer  src/ui  codex --full-auto │
-│ ✓ 󰈙 3-2 editor notes  workspace/notes  nvim      │
-│ ✕ $ 4-3 old shell  tmp/elsewhere  zsh            │
-│ ↑↓/Tab move  Shift+Tab back  Enter jump  Esc close  │
-╰──────────────────────────────────────────────────────╯
+FIND  › sr
+──────────────────────────────────────────────────────────────────────────────
+◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
+✓ 󰈙 3-2  editor notes   workspace/notes  nvim
+✕ $ 4-3  old shell      tmp/elsewhere    zsh
+↑↓/Tab move  Shift+Tab back  Enter jump  Esc close
 ```
 
 ## Features
@@ -63,17 +61,17 @@ live session.
 
 Supported fields:
 
-| Field | Meaning |
-|---|---|
-| `{progress}` | Colored running, idle, exited, or unknown indicator |
-| `{icon}` | Colored pane or command category icon |
-| `{title}` | Pane title, falling back to `pane <id>` |
-| `{dir}` | Last two components of the pane CWD relative to the focused pane CWD |
-| `{session}` | Live session name |
-| `{tab}` | Tab name |
-| `{tab_id}` | Stable Zellij tab ID |
-| `{command}` | Program basename and the last two command arguments |
-| `{pane_id}` | Numeric terminal pane ID |
+| Field        | Meaning                                      |
+| :----------- | :------------------------------------------- |
+| `{progress}` | Running spinner, green check, red cross, `?` |
+| `{icon}`     | Pane or command category icon                |
+| `{title}`    | Pane title, fallback `pane <id>`             |
+| `{dir}`      | Relative CWD, last `dir_depth` components    |
+| `{session}`  | Live session name                            |
+| `{tab}`      | Tab name                                     |
+| `{tab_id}`   | Stable Zellij tab ID                         |
+| `{command}`  | Program and last `command_tail` arguments    |
+| `{pane_id}`  | Numeric terminal pane ID                     |
 
 Only text fields present in the active format are searchable. The complete
 default format therefore searches tab ID, pane ID, title, relative directory,
@@ -252,20 +250,20 @@ are not registered by this plugin.
 
 ## Keyboard controls
 
-| Key | Action |
-|---|---|
-| `Ctrl+Shift+e` | Open or focus the pane switcher directly |
-| `Ctrl+o`, then `g` | Open or focus the pane switcher |
-| Printable text | Edit the search query |
-| Backspace | Delete one character |
-| `Ctrl+w` | Delete the previous word |
-| `Ctrl+u` | Clear the query |
-| Up / `Ctrl+p` / `Shift+Tab` | Select previous pane row |
-| Down / `Ctrl+n` / `Tab` | Select next pane row |
-| PageUp / PageDown | Move by ten rows |
-| Enter | Focus the selected pane and close |
-| Esc | Close without navigation |
-| Left / Right | No action |
+| Key                         | Action                        |
+| :-------------------------- | :---------------------------- |
+| `Ctrl+Shift+e`              | Open or focus the switcher    |
+| `Ctrl+o`, then `g`          | Open or focus the fallback    |
+| Printable text              | Edit the search query         |
+| Backspace                   | Delete one character          |
+| `Ctrl+w`                    | Delete the previous word      |
+| `Ctrl+u`                    | Clear the query               |
+| Up / `Ctrl+p` / `Shift+Tab` | Select the previous row       |
+| Down / `Ctrl+n` / `Tab`     | Select the next row           |
+| PageUp / PageDown           | Move by ten rows              |
+| Enter                       | Focus the selected pane       |
+| Esc                         | Close without navigation      |
+| Left / Right                | No action                     |
 
 ## Configuration
 
