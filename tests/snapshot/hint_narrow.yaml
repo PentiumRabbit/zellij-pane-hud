@@ -1,0 +1,24 @@
+name: hint_narrow
+plugin: ../../dist/pane-switcher.wasm
+config: {}
+world:
+  current: demo
+  sessions:
+    - demo
+geometry:
+  rows: 10
+  cols: 40
+steps:
+  - action: grant_permissions
+  - action: mode_update
+    mode: normal
+    session: demo
+  - action: session_update
+    current: demo
+    sessions:
+      - demo
+  - action: tab_update
+    tabs:
+      - name: code
+        active: true
+        tiled: 1

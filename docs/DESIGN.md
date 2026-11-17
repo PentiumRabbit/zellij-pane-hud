@@ -32,6 +32,10 @@ It is not a permanent sidebar and does not render a session/tab tree.
    shows this action as a muted, right-aligned hint before `Esc`.
 9. Esc closes without navigation.
 
+Control characters from pasted query text render as spaces and are normalized
+out of the generated pane title so terminal output and pane names remain
+single-line.
+
 The focused pane is selected when no query is active and
 `follow_current_session=true`. A non-whitespace query selects the top-ranked
 result after every query change. Clearing or reducing the query to whitespace

@@ -17,7 +17,7 @@ fi
 
 output_dir="$(mktemp -d /tmp/pane-switcher-snapshot.XXXXXX)"
 snapshot_log="$output_dir/plugin-commands.txt"
-for fixture in smoke template mouse ime; do
+for fixture in smoke template mouse ime hint_narrow; do
     zellij-plugin-snapshot "tests/snapshot/${fixture}.yaml" --out "$output_dir" |
         tee -a "$snapshot_log"
 done
@@ -26,19 +26,23 @@ smoke="$output_dir/smoke.ansi.txt"
 template="$output_dir/template.ansi.txt"
 mouse="$output_dir/mouse.ansi.txt"
 ime="$output_dir/ime.ansi.txt"
+hint_narrow="$output_dir/hint_narrow.ansi.txt"
 smoke_plain="$output_dir/smoke.txt"
 template_plain="$output_dir/template.txt"
 mouse_plain="$output_dir/mouse.txt"
 ime_plain="$output_dir/ime.txt"
+hint_narrow_plain="$output_dir/hint_narrow.txt"
 
 test -s "$smoke"
 test -s "$template"
 test -s "$mouse"
 test -s "$ime"
+test -s "$hint_narrow"
 perl -pe 's/\e\[[0-9;]*m//g' "$smoke" >"$smoke_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$template" >"$template_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$mouse" >"$mouse_plain"
 perl -pe 's/\e\[[0-9;]*m//g' "$ime" >"$ime_plain"
+perl -pe 's/\e\[[0-9;]*m//g' "$hint_narrow" >"$hint_narrow_plain"
 
 grep -a -q "FIND" "$smoke"
 grep -q "src color renderer" "$smoke_plain"
@@ -86,6 +90,13 @@ grep -q "FIND  › 的输入" "$ime_plain"
 grep -q "的输入法测试" "$ime_plain"
 if grep -q "其他窗口" "$ime_plain"; then
     printf '%s\n' "IME query did not filter non-matching rows." >&2
+    exit 1
+fi
+
+grep -q "FIND" "$hint_narrow_plain"
+grep -q "Ctrl+Enter  Esc" "$hint_narrow_plain"
+if grep -q "Ctrl+Enter new tab" "$hint_narrow_plain"; then
+    printf '%s\n' "Narrow input hint did not shorten to Ctrl+Enter." >&2
     exit 1
 fi
 

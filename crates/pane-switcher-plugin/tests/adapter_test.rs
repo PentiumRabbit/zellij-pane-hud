@@ -194,6 +194,46 @@ fn ctrl_enter_requests_a_new_tab_with_the_query_as_pane_title() {
 }
 
 #[test]
+fn ctrl_enter_rejects_alt_and_super_but_allows_shift() {
+    assert_eq!(
+        key_intent(
+            &KeyWithModifier::new(BareKey::Enter)
+                .with_ctrl_modifier()
+                .with_shift_modifier()
+        ),
+        InputIntent::CreateTab
+    );
+    assert_eq!(
+        key_intent(
+            &KeyWithModifier::new(BareKey::Enter)
+                .with_ctrl_modifier()
+                .with_alt_modifier()
+        ),
+        InputIntent::Ignored
+    );
+    assert_eq!(
+        key_intent(
+            &KeyWithModifier::new(BareKey::Enter)
+                .with_ctrl_modifier()
+                .with_super_modifier()
+        ),
+        InputIntent::Ignored
+    );
+}
+
+#[test]
+fn plain_enter_still_navigates_while_other_modified_enter_is_ignored() {
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Enter)),
+        InputIntent::Enter
+    );
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Enter).with_alt_modifier()),
+        InputIntent::Ignored
+    );
+}
+
+#[test]
 fn cjk_commit_is_inserted_even_when_ime_reports_modifiers() {
     assert_eq!(
         key_intent(&KeyWithModifier::new(BareKey::Char('的')).with_ctrl_modifier()),

@@ -430,11 +430,46 @@ fn search_line_responsively_shortens_the_new_tab_hint() {
         (43, "Ctrl+Enter new tab  Esc ", None),
         (100, "Ctrl+Enter new tab  Esc ", None),
     ] {
-        let (line, _) = render_search_line(cols, "query", false);
+        let (line, cursor) = render_search_line(cols, "query", false);
 
         assert!(line.ends_with(expected), "width {cols}: {line:?}");
         if let Some(hidden) = hidden {
             assert!(!line.contains(hidden), "width {cols}: {line:?}");
+        }
+        assert_eq!(cursor, Some((14, 0)), "width {cols}");
+        assert_eq!(UnicodeWidthStr::width(line.as_str()), cols);
+    }
+}
+
+#[test]
+fn search_line_switches_hint_exactly_at_each_layout_threshold() {
+    for (cols, hint) in [
+        (14, None),
+        (15, None),
+        (22, None),
+        (23, None),
+        (34, None),
+        (35, Some("Ctrl+Enter")),
+        (42, Some("Ctrl+Enter")),
+        (43, Some("Ctrl+Enter new tab")),
+    ] {
+        let (line, cursor) = render_search_line(cols, "query", false);
+
+        assert!(
+            line.ends_with(if cols < 15 { "" } else { "Esc " }),
+            "width {cols}: {line:?}"
+        );
+        if cols < 15 {
+            assert!(!line.contains("Esc"), "width {cols}: {line:?}");
+            assert_eq!(cursor, None, "width {cols}");
+        } else if cols == 15 {
+            assert_eq!(cursor, Some((9, 0)), "width {cols}");
+        } else {
+            assert_eq!(cursor, Some((14, 0)), "width {cols}");
+        }
+        match hint {
+            Some(hint) => assert!(line.contains(hint), "width {cols}: {line:?}"),
+            None => assert!(!line.contains("Ctrl+Enter"), "width {cols}: {line:?}"),
         }
         assert_eq!(UnicodeWidthStr::width(line.as_str()), cols);
     }
@@ -463,6 +498,32 @@ fn unicode_queries_truncate_by_display_width_before_the_hint() {
 }
 
 #[test]
+fn combining_marks_and_emoji_preserve_display_width_before_the_hint() {
+    for cols in [24, 40, 80] {
+        let (line, cursor) = render_search_line(cols, "e\u{301}🙂中文🙂", false);
+        let visible = strip_sgr(&line);
+
+        assert_eq!(UnicodeWidthStr::width(visible.as_str()), cols);
+        assert!(visible.ends_with("Esc "), "width {cols}: {visible:?}");
+        assert!(!visible.contains('�'));
+        assert!(
+            cursor.is_none_or(|(column, row)| column <= cols && row == 0),
+            "width {cols}, cursor {cursor:?}"
+        );
+    }
+}
+
+#[test]
+fn pasted_control_characters_never_break_the_search_line() {
+    let (line, cursor) = render_search_line(60, "first\nsecond\tthird\r\u{1b}[31m", false);
+
+    assert!(!line.chars().any(char::is_control), "{line:?}");
+    assert_eq!(UnicodeWidthStr::width(line.as_str()), 60);
+    assert!(line.ends_with("Ctrl+Enter new tab  Esc "));
+    assert!(cursor.is_none_or(|(column, row)| column <= 60 && row == 0));
+}
+
+#[test]
 fn empty_query_keeps_the_cursor_at_the_start_and_shows_the_hint() {
     let (line, cursor) = render_search_line(60, "", false);
 
@@ -474,9 +535,18 @@ fn empty_query_keeps_the_cursor_at_the_start_and_shows_the_hint() {
 
 #[test]
 fn search_line_hint_is_rendered_in_the_muted_border_color() {
-    let (line, _) = render_search_line(100, "", true);
+    for (cols, hint) in [
+        (100, "  Ctrl+Enter new tab  Esc "),
+        (40, "  Ctrl+Enter  Esc "),
+        (20, "  Esc "),
+    ] {
+        let (line, _) = render_search_line(cols, "", true);
 
-    assert!(line.contains("\u{1b}[38;5;240m  Ctrl+Enter new tab  Esc \u{1b}[0m"));
+        assert!(
+            line.contains(&format!("\u{1b}[38;5;240m{hint}\u{1b}[0m")),
+            "width {cols}: {line:?}"
+        );
+    }
 }
 
 #[test]
@@ -494,6 +564,14 @@ fn search_line_stays_width_safe_and_cursor_bound_at_every_small_width() {
             "width {cols}, cursor {cursor:?}"
         );
     }
+}
+
+#[test]
+fn zero_width_search_has_no_output_or_cursor() {
+    let (line, cursor) = render_search_line(0, "query", true);
+
+    assert!(line.is_empty());
+    assert_eq!(cursor, None);
 }
 
 #[test]

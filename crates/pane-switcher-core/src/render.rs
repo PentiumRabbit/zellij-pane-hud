@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use unicode_width::UnicodeWidthStr;
 
 use crate::color::ProgressColors;
@@ -359,7 +361,8 @@ fn search_line(cols: usize, query: &str) -> (Vec<StyledSpan>, Option<(usize, usi
     }
     let available = cols.saturating_sub(prefix_width + suffix_width);
 
-    let visible_query = tail_by_width(query, available);
+    let display_query = sanitize_search_query(query);
+    let visible_query = tail_by_width(&display_query, available);
     let query_width = UnicodeWidthStr::width(visible_query.as_str());
     let padding = cols.saturating_sub(prefix_width + query_width + suffix_width);
     let mut spans = vec![StyledSpan::new(SEARCH_PREFIX, ForegroundColor::Default)];
@@ -379,6 +382,25 @@ fn search_line(cols: usize, query: &str) -> (Vec<StyledSpan>, Option<(usize, usi
     spans.push(StyledSpan::new(suffix, BORDER_COLOR));
     let cursor = Some(((prefix_width + query_width).min(cols), 0));
     (pad_spans(spans, cols), cursor)
+}
+
+fn sanitize_search_query(query: &str) -> Cow<'_, str> {
+    if query.chars().any(char::is_control) {
+        Cow::Owned(
+            query
+                .chars()
+                .map(|character| {
+                    if character.is_control() {
+                        ' '
+                    } else {
+                        character
+                    }
+                })
+                .collect(),
+        )
+    } else {
+        Cow::Borrowed(query)
+    }
 }
 
 fn search_hint(cols: usize, prefix_width: usize) -> Option<&'static str> {

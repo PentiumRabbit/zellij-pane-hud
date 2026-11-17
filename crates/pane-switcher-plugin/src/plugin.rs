@@ -17,8 +17,63 @@ use crate::adapter::{
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
 const PLUGIN_PANE_NAME: &str = "pane-switcher";
 
-fn new_tab_pane_title(query: &str) -> Option<&str> {
-    (!query.trim().is_empty()).then_some(query)
+fn new_tab_pane_title(query: &str) -> Option<String> {
+    if query.trim().is_empty() {
+        return None;
+    }
+    Some(
+        query
+            .chars()
+            .map(|character| {
+                if character.is_control() {
+                    ' '
+                } else {
+                    character
+                }
+            })
+            .collect(),
+    )
+}
+
+trait TabCreationHost {
+    fn open_default_tab(&mut self) -> Option<usize>;
+    fn focused_pane(&mut self) -> Result<(usize, PaneId), String>;
+    fn rename_pane(&mut self, pane_id: PaneId, title: &str);
+    fn close_plugin(&mut self);
+}
+
+struct ZellijTabCreationHost;
+
+impl TabCreationHost for ZellijTabCreationHost {
+    fn open_default_tab(&mut self) -> Option<usize> {
+        new_tab(None::<String>, None::<String>)
+    }
+
+    fn focused_pane(&mut self) -> Result<(usize, PaneId), String> {
+        get_focused_pane_info()
+    }
+
+    fn rename_pane(&mut self, pane_id: PaneId, title: &str) {
+        rename_pane_with_id(pane_id, title);
+    }
+
+    fn close_plugin(&mut self) {
+        close_self();
+    }
+}
+
+fn create_tab_with_pane_title(query: &str, host: &mut impl TabCreationHost) -> bool {
+    let Some(title) = new_tab_pane_title(query) else {
+        return false;
+    };
+    if host.open_default_tab().is_none() {
+        return false;
+    }
+    if let Ok((_, pane_id)) = host.focused_pane() {
+        host.rename_pane(pane_id, &title);
+    }
+    host.close_plugin();
+    true
 }
 
 #[derive(Default)]
@@ -261,17 +316,8 @@ impl PaneSwitcherPlugin {
                 return true;
             }
             InputIntent::CreateTab => {
-                let Some(title) = new_tab_pane_title(self.finder.query()) else {
-                    return false;
-                };
-                if new_tab(None::<String>, None::<String>).is_none() {
-                    return false;
-                }
-                if let Ok((_, pane_id)) = get_focused_pane_info() {
-                    rename_pane_with_id(pane_id, title);
-                }
-                close_self();
-                return true;
+                let mut host = ZellijTabCreationHost;
+                return create_tab_with_pane_title(self.finder.query(), &mut host);
             }
             InputIntent::Close => {
                 close_self();
@@ -443,21 +489,173 @@ mod tests {
     use pane_switcher_core::config::Config;
     use pane_switcher_core::style::ColorSpec;
     use zellij_tile::prelude::{
-        BareKey, Event, KeyWithModifier, ModeInfo, PaletteColor, PaneManifest, SessionInfo,
+        BareKey, Event, KeyWithModifier, ModeInfo, PaletteColor, PaneId, PaneManifest, SessionInfo,
         ZellijPlugin,
     };
 
-    use super::{new_tab_pane_title, PaneSwitcherPlugin};
+    use super::{
+        create_tab_with_pane_title, new_tab_pane_title, PaneSwitcherPlugin, TabCreationHost,
+    };
 
-    #[test]
-    fn new_tab_pane_title_preserves_the_query_text() {
-        assert_eq!(new_tab_pane_title(" build api "), Some(" build api "));
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    enum FakeTabCreationCall {
+        OpenTab,
+        QueryFocusedPane,
+        RenamePane(PaneId, String),
+        ClosePlugin,
+    }
+
+    struct FakeTabCreationHost {
+        calls: Vec<FakeTabCreationCall>,
+        open_result: Option<usize>,
+        focused_result: Result<(usize, PaneId), String>,
+    }
+
+    impl FakeTabCreationHost {
+        fn successful() -> Self {
+            Self {
+                calls: Vec::new(),
+                open_result: Some(42),
+                focused_result: Ok((1, PaneId::Terminal(7))),
+            }
+        }
+    }
+
+    impl TabCreationHost for FakeTabCreationHost {
+        fn open_default_tab(&mut self) -> Option<usize> {
+            self.calls.push(FakeTabCreationCall::OpenTab);
+            self.open_result
+        }
+
+        fn focused_pane(&mut self) -> Result<(usize, PaneId), String> {
+            self.calls.push(FakeTabCreationCall::QueryFocusedPane);
+            self.focused_result.clone()
+        }
+
+        fn rename_pane(&mut self, pane_id: PaneId, title: &str) {
+            self.calls
+                .push(FakeTabCreationCall::RenamePane(pane_id, title.to_owned()));
+        }
+
+        fn close_plugin(&mut self) {
+            self.calls.push(FakeTabCreationCall::ClosePlugin);
+        }
     }
 
     #[test]
-    fn new_tab_pane_title_rejects_blank_input() {
-        assert_eq!(new_tab_pane_title(""), None);
-        assert_eq!(new_tab_pane_title("   "), None);
+    fn new_tab_pane_title_preserves_the_query_text() {
+        assert_eq!(
+            new_tab_pane_title(" build api "),
+            Some(" build api ".into())
+        );
+    }
+
+    #[test]
+    fn new_tab_pane_title_preserves_unicode_text() {
+        assert_eq!(
+            new_tab_pane_title("构建 API 🚀"),
+            Some("构建 API 🚀".into())
+        );
+    }
+
+    #[test]
+    fn new_tab_pane_title_replaces_control_characters_with_spaces() {
+        assert_eq!(
+            new_tab_pane_title("first\nsecond\tthird\r\u{1b}[31m"),
+            Some("first second third  [31m".into())
+        );
+    }
+
+    #[test]
+    fn new_tab_pane_title_rejects_every_blank_whitespace_form() {
+        for query in ["", " ", "\t\n", "\u{3000}"] {
+            assert_eq!(new_tab_pane_title(query), None, "query {query:?}");
+        }
+    }
+
+    #[test]
+    fn creating_a_tab_dispatches_the_host_calls_in_order() {
+        let mut host = FakeTabCreationHost::successful();
+
+        assert!(create_tab_with_pane_title(" build api ", &mut host));
+
+        assert_eq!(
+            host.calls,
+            vec![
+                FakeTabCreationCall::OpenTab,
+                FakeTabCreationCall::QueryFocusedPane,
+                FakeTabCreationCall::RenamePane(PaneId::Terminal(7), " build api ".into()),
+                FakeTabCreationCall::ClosePlugin,
+            ]
+        );
+    }
+
+    #[test]
+    fn blank_queries_do_not_call_the_host() {
+        for query in ["", " ", "\t", "\n\r", "\u{3000}"] {
+            let mut host = FakeTabCreationHost::successful();
+
+            assert!(!create_tab_with_pane_title(query, &mut host), "{query:?}");
+            assert!(host.calls.is_empty(), "{query:?}: {:?}", host.calls);
+        }
+    }
+
+    #[test]
+    fn creation_forwards_the_normalized_single_line_title() {
+        let mut host = FakeTabCreationHost::successful();
+
+        assert!(create_tab_with_pane_title(
+            "first\nsecond\tthird",
+            &mut host
+        ));
+
+        assert_eq!(
+            host.calls[2],
+            FakeTabCreationCall::RenamePane(PaneId::Terminal(7), "first second third".into())
+        );
+    }
+
+    #[test]
+    fn failed_tab_creation_stops_before_querying_or_closing() {
+        let mut host = FakeTabCreationHost {
+            open_result: None,
+            ..FakeTabCreationHost::successful()
+        };
+
+        assert!(!create_tab_with_pane_title("build", &mut host));
+
+        assert_eq!(host.calls, vec![FakeTabCreationCall::OpenTab]);
+    }
+
+    #[test]
+    fn focused_pane_failure_still_closes_the_open_plugin() {
+        let mut host = FakeTabCreationHost {
+            focused_result: Err("pane unavailable".into()),
+            ..FakeTabCreationHost::successful()
+        };
+
+        assert!(create_tab_with_pane_title("build", &mut host));
+
+        assert_eq!(
+            host.calls,
+            vec![
+                FakeTabCreationCall::OpenTab,
+                FakeTabCreationCall::QueryFocusedPane,
+                FakeTabCreationCall::ClosePlugin,
+            ]
+        );
+    }
+
+    #[test]
+    fn unicode_query_is_forwarded_unchanged_to_the_pane_rename() {
+        let mut host = FakeTabCreationHost::successful();
+
+        assert!(create_tab_with_pane_title("构建 API 🚀", &mut host));
+
+        assert_eq!(
+            host.calls[2],
+            FakeTabCreationCall::RenamePane(PaneId::Terminal(7), "构建 API 🚀".into())
+        );
     }
 
     #[test]
