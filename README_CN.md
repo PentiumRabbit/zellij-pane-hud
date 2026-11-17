@@ -8,20 +8,22 @@
 显示运行状态、类型图标、Tab-Pane ID、标题、简写目录和命令参数。
 
 输入关键字即可模糊筛选，默认会自动选中最佳匹配；按 Enter 即可聚焦当前会话
-或其他活动会话中最相关的结果。
+或其他活动会话中最相关的结果。输入非空内容后按 `Ctrl+Enter`，会新建并切换
+到一个 Tab，并用输入内容命名该 Tab 的默认 Pane。
 
 ```text
-FIND  › sr
+ FIND  › sr                                                     Ctrl+Enter new tab  Esc
 ──────────────────────────────────────────────────────────────────────────────
 ◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
 ✓ 󰈙 3-2  editor notes   workspace/notes  nvim
 ✕ $ 4-3  old shell      tmp/elsewhere    zsh
-↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close
+↑↓/Tab move  Shift+Tab back  Enter/click jump  Ctrl+Enter new tab  wheel scroll  Esc close
 ```
 
 ## 功能
 
 - 每个终端 Pane 一行，没有树形层级、折叠或详情面板。
+- `Ctrl+Enter` 新建并切换到 Tab，用当前输入内容命名其默认 Pane。
 - 行模板可配置，可显示标题、相对目录、状态、图标、会话、Tab、Tab ID、命令和 Pane ID。
 - 浮动窗口宽高可配置为终端百分比或固定行列数。
 - 命令参数优先完整显示，只有行宽不足时才省略。
@@ -186,6 +188,7 @@ file:/absolute/path/to/zellij-pane-switcher/dist/pane-switcher.wasm
 | Down / `Ctrl+n` / `Tab`     | 选择下一条              |
 | PageUp / PageDown           | 按十行移动              |
 | Enter                       | 聚焦选中 Pane 并关闭    |
+| `Ctrl+Enter`                | 新建 Tab 并用输入内容命名其 Pane |
 | 左键单击 Pane 行            | 聚焦该 Pane 并关闭      |
 | 鼠标滚轮上 / 下             | 选择上一条 / 下一条     |
 | Esc                         | 关闭，不跳转            |

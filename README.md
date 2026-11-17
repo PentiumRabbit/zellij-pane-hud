@@ -10,21 +10,24 @@ directory, and command arguments.
 
 Type to fuzzy-filter the pane list. The best-scoring match is selected as you
 type, so Enter immediately focuses the top result in the current or another
-live session.
+live session. With a non-whitespace query, `Ctrl+Enter` creates and switches
+to a new tab, then uses the query as the default pane's title.
 
 ```text
-FIND  › sr
+ FIND  › sr                                                     Ctrl+Enter new tab  Esc
 ──────────────────────────────────────────────────────────────────────────────
 ◓ ❉ 3-1  src renderer   src/ui           codex --full-auto
 ✓ 󰈙 3-2  editor notes   workspace/notes  nvim
 ✕ $ 4-3  old shell      tmp/elsewhere    zsh
-↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close
+↑↓/Tab move  Shift+Tab back  Enter/click jump  Ctrl+Enter new tab  wheel scroll  Esc close
 ```
 
 ## Features
 
 - One terminal pane per row; no session/tab hierarchy, folding, or detail
   panel.
+- `Ctrl+Enter` creates a new tab, switches to it, and renames its default pane
+  to the current query.
 - Configurable row templates with title, relative directory, progress, icon,
   session, tab, tab ID, command, and pane ID fields.
 - Configurable floating-window dimensions using terminal percentages or fixed
@@ -267,6 +270,7 @@ are not registered by this plugin.
 | Down / `Ctrl+n` / `Tab`     | Select the next row           |
 | PageUp / PageDown           | Move by ten rows              |
 | Enter                       | Focus the selected pane       |
+| `Ctrl+Enter`                | Create a tab and rename its pane with the query |
 | Left-click a pane row       | Focus that pane and close     |
 | Mouse wheel up / down       | Select previous / next row    |
 | Esc                         | Close without navigation      |

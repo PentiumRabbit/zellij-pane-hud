@@ -186,6 +186,14 @@ fn key_adapter_handles_ctrl_shortcuts_and_utf8_text() {
 }
 
 #[test]
+fn ctrl_enter_requests_a_new_tab_with_the_query_as_pane_title() {
+    assert_eq!(
+        key_intent(&KeyWithModifier::new(BareKey::Enter).with_ctrl_modifier()),
+        InputIntent::CreateTab
+    );
+}
+
+#[test]
 fn cjk_commit_is_inserted_even_when_ime_reports_modifiers() {
     assert_eq!(
         key_intent(&KeyWithModifier::new(BareKey::Char('的')).with_ctrl_modifier()),

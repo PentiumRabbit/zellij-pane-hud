@@ -44,6 +44,7 @@ pub enum InputIntent {
     PageUp,
     PageDown,
     Enter,
+    CreateTab,
     Close,
     Ignored,
 }
@@ -98,6 +99,10 @@ pub fn key_intent(key: &KeyWithModifier) -> InputIntent {
         if !character.is_control() && !character.is_ascii() {
             return InputIntent::Insert(character);
         }
+    }
+
+    if has_ctrl && !has_other_modifier && matches!(key.bare_key, BareKey::Enter) {
+        return InputIntent::CreateTab;
     }
 
     if has_ctrl && !has_other_modifier {

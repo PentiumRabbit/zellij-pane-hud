@@ -405,7 +405,95 @@ fn footer_documents_tab_navigation() {
     assert!(footer.contains("Tab"));
     assert!(footer.contains("Shift+Tab"));
     assert!(footer.contains("click"));
+    assert!(footer.contains("Ctrl+Enter new"));
     assert!(footer.contains("wheel"));
+}
+
+#[test]
+fn search_line_places_the_full_new_tab_hint_before_escape() {
+    let (line, cursor) = render_search_line(100, "build", false);
+
+    assert!(line.ends_with("Ctrl+Enter new tab  Esc "));
+    let hint_byte = line.find("Ctrl+Enter").expect("hint");
+    assert_eq!(UnicodeWidthStr::width(&line[..hint_byte]), 76);
+    assert_eq!(UnicodeWidthStr::width(line.as_str()), 100);
+    assert_eq!(cursor, Some((14, 0)));
+}
+
+#[test]
+fn search_line_responsively_shortens_the_new_tab_hint() {
+    for (cols, expected, hidden) in [
+        (22, "Esc ", Some("Ctrl+Enter")),
+        (34, "Esc ", Some("Ctrl+Enter")),
+        (35, "Ctrl+Enter  Esc ", None),
+        (42, "Ctrl+Enter  Esc ", None),
+        (43, "Ctrl+Enter new tab  Esc ", None),
+        (100, "Ctrl+Enter new tab  Esc ", None),
+    ] {
+        let (line, _) = render_search_line(cols, "query", false);
+
+        assert!(line.ends_with(expected), "width {cols}: {line:?}");
+        if let Some(hidden) = hidden {
+            assert!(!line.contains(hidden), "width {cols}: {line:?}");
+        }
+        assert_eq!(UnicodeWidthStr::width(line.as_str()), cols);
+    }
+}
+
+#[test]
+fn long_queries_scroll_without_overlapping_the_new_tab_hint() {
+    let (line, cursor) = render_search_line(60, "0123456789abcdefghijklmnopqrstuvwxyz", false);
+
+    assert_eq!(
+        line,
+        " FIND  › bcdefghijklmnopqrstuvwxyz  Ctrl+Enter new tab  Esc "
+    );
+    assert_eq!(cursor, Some((34, 0)));
+}
+
+#[test]
+fn unicode_queries_truncate_by_display_width_before_the_hint() {
+    let (line, cursor) = render_search_line(40, "项目一项目二项目三项目四", false);
+
+    assert!(line.contains("项目三项目四"));
+    assert!(!line.contains('�'));
+    assert!(line.ends_with("Ctrl+Enter  Esc "));
+    assert_eq!(UnicodeWidthStr::width(line.as_str()), 40);
+    assert_eq!(cursor, Some((21, 0)));
+}
+
+#[test]
+fn empty_query_keeps_the_cursor_at_the_start_and_shows_the_hint() {
+    let (line, cursor) = render_search_line(60, "", false);
+
+    assert!(line.starts_with(" FIND  › "));
+    assert!(line.ends_with("Ctrl+Enter new tab  Esc "));
+    assert_eq!(UnicodeWidthStr::width(line.as_str()), 60);
+    assert_eq!(cursor, Some((9, 0)));
+}
+
+#[test]
+fn search_line_hint_is_rendered_in_the_muted_border_color() {
+    let (line, _) = render_search_line(100, "", true);
+
+    assert!(line.contains("\u{1b}[38;5;240m  Ctrl+Enter new tab  Esc \u{1b}[0m"));
+}
+
+#[test]
+fn search_line_stays_width_safe_and_cursor_bound_at_every_small_width() {
+    for cols in 1..=120 {
+        let (line, cursor) = render_search_line(cols, "查询query", true);
+
+        assert_eq!(
+            UnicodeWidthStr::width(strip_sgr(&line).as_str()),
+            cols,
+            "width {cols}"
+        );
+        assert!(
+            cursor.is_none_or(|(column, row)| column <= cols && row == 0),
+            "width {cols}, cursor {cursor:?}"
+        );
+    }
 }
 
 #[test]
@@ -672,6 +760,26 @@ fn one_cell_terminals_still_receive_width_safe_output() {
 
     assert_eq!(frame.lines.len(), 1);
     assert_line_widths(&frame.lines, 1);
+}
+
+fn render_search_line(cols: usize, query: &str, color: bool) -> (String, Option<(usize, usize)>) {
+    let frame = render_frame(
+        &Rows::default(),
+        None,
+        cols,
+        4,
+        query,
+        &Config::default(),
+        0,
+        RenderOptions {
+            color,
+            ..RenderOptions::default()
+        },
+    );
+    (
+        frame.lines.first().cloned().unwrap_or_default(),
+        frame.cursor,
+    )
 }
 
 fn assert_line_widths(lines: &[String], expected: usize) {

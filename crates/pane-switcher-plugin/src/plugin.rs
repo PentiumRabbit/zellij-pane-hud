@@ -17,6 +17,10 @@ use crate::adapter::{
 const MAX_PANE_QUERY_FAILURES: u8 = 2;
 const PLUGIN_PANE_NAME: &str = "pane-switcher";
 
+fn new_tab_pane_title(query: &str) -> Option<&str> {
+    (!query.trim().is_empty()).then_some(query)
+}
+
 #[derive(Default)]
 pub struct PaneSwitcherPlugin {
     finder: Finder,
@@ -256,6 +260,19 @@ impl PaneSwitcherPlugin {
                 self.navigate();
                 return true;
             }
+            InputIntent::CreateTab => {
+                let Some(title) = new_tab_pane_title(self.finder.query()) else {
+                    return false;
+                };
+                if new_tab(None::<String>, None::<String>).is_none() {
+                    return false;
+                }
+                if let Ok((_, pane_id)) = get_focused_pane_info() {
+                    rename_pane_with_id(pane_id, title);
+                }
+                close_self();
+                return true;
+            }
             InputIntent::Close => {
                 close_self();
                 return true;
@@ -430,7 +447,18 @@ mod tests {
         ZellijPlugin,
     };
 
-    use super::PaneSwitcherPlugin;
+    use super::{new_tab_pane_title, PaneSwitcherPlugin};
+
+    #[test]
+    fn new_tab_pane_title_preserves_the_query_text() {
+        assert_eq!(new_tab_pane_title(" build api "), Some(" build api "));
+    }
+
+    #[test]
+    fn new_tab_pane_title_rejects_blank_input() {
+        assert_eq!(new_tab_pane_title(""), None);
+        assert_eq!(new_tab_pane_title("   "), None);
+    }
 
     #[test]
     fn cursor_is_reported_only_when_its_position_changes() {

@@ -27,7 +27,10 @@ It is not a permanent sidebar and does not render a session/tab tree.
 6. Left/Right are ignored.
 7. Enter focuses the selected pane, closes the HUD, and switches sessions when
    necessary.
-8. Esc closes without navigation.
+8. With a non-blank query, `Ctrl+Enter` creates and switches to a new tab,
+   renames its default pane to the query, and closes the HUD. The input line
+   shows this action as a muted, right-aligned hint before `Esc`.
+9. Esc closes without navigation.
 
 The focused pane is selected when no query is active and
 `follow_current_session=true`. A non-whitespace query selects the top-ranked

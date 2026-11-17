@@ -11,6 +11,11 @@ use crate::style::{
 use crate::template::TemplateField;
 
 const BORDER_COLOR: ForegroundColor = ForegroundColor::Border;
+const SEARCH_PREFIX: &str = " FIND  › ";
+const SEARCH_HINT_FULL: &str = "Ctrl+Enter new tab";
+const SEARCH_HINT_COMPACT: &str = "Ctrl+Enter";
+const SEARCH_ESCAPE: &str = "Esc";
+const MIN_SEARCH_QUERY_WIDTH: usize = 8;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RenderOptions {
@@ -76,7 +81,7 @@ pub fn render_frame(
     }
     lines.push(render_text_line(
         fitted_text(
-            " ↑↓/Tab move  Shift+Tab back  Enter/click jump  wheel scroll  Esc close ",
+            " ↑↓/Tab move  Shift+Tab back  Enter/click jump  Ctrl+Enter new tab  wheel scroll  Esc close ",
             cols,
             BORDER_COLOR,
         ),
@@ -343,24 +348,52 @@ fn search_line(cols: usize, query: &str) -> (Vec<StyledSpan>, Option<(usize, usi
     if cols == 0 {
         return (Vec::new(), None);
     }
-    let prefix = " FIND  › ";
-    let suffix = "  Esc ";
-    let prefix_width = UnicodeWidthStr::width(prefix);
-    let suffix_width = UnicodeWidthStr::width(suffix);
-    let available = cols.saturating_sub(prefix_width + suffix_width);
-    if available == 0 {
-        return (fitted_text(" FIND  › ", cols, BORDER_COLOR), None);
+    let prefix_width = UnicodeWidthStr::width(SEARCH_PREFIX);
+    let hint = search_hint(cols, prefix_width);
+    let suffix_width = search_suffix_width(hint);
+    if cols < prefix_width + suffix_width {
+        return (
+            fitted_text(SEARCH_PREFIX, cols, ForegroundColor::Default),
+            None,
+        );
     }
+    let available = cols.saturating_sub(prefix_width + suffix_width);
 
     let visible_query = tail_by_width(query, available);
     let query_width = UnicodeWidthStr::width(visible_query.as_str());
     let padding = cols.saturating_sub(prefix_width + query_width + suffix_width);
-    let content = format!("{prefix}{visible_query}{}{suffix}", " ".repeat(padding));
+    let mut spans = vec![StyledSpan::new(SEARCH_PREFIX, ForegroundColor::Default)];
+    if !visible_query.is_empty() {
+        spans.push(StyledSpan::new(visible_query, ForegroundColor::Default));
+    }
+    if padding > 0 {
+        spans.push(StyledSpan::new(
+            " ".repeat(padding),
+            ForegroundColor::Default,
+        ));
+    }
+    let suffix = hint.map_or_else(
+        || format!("  {SEARCH_ESCAPE} "),
+        |hint| format!("  {hint}  {SEARCH_ESCAPE} "),
+    );
+    spans.push(StyledSpan::new(suffix, BORDER_COLOR));
     let cursor = Some(((prefix_width + query_width).min(cols), 0));
-    (
-        fitted_text(&content, cols, ForegroundColor::Default),
-        cursor,
-    )
+    (pad_spans(spans, cols), cursor)
+}
+
+fn search_hint(cols: usize, prefix_width: usize) -> Option<&'static str> {
+    [SEARCH_HINT_FULL, SEARCH_HINT_COMPACT]
+        .into_iter()
+        .find(|hint| {
+            cols >= prefix_width + MIN_SEARCH_QUERY_WIDTH + search_suffix_width(Some(hint))
+        })
+}
+
+fn search_suffix_width(hint: Option<&str>) -> usize {
+    2 + hint.map_or(0, UnicodeWidthStr::width)
+        + if hint.is_some() { 2 } else { 0 }
+        + UnicodeWidthStr::width(SEARCH_ESCAPE)
+        + 1
 }
 
 fn divider(cols: usize) -> Vec<StyledSpan> {
